@@ -1,4 +1,4 @@
-package com.mvt.urlcaster;
+package com.mvt.derpcast;
 
 import android.content.Context;
 import android.util.Log;
@@ -8,7 +8,7 @@ import com.koushikdutta.async.http.libcore.RawHeaders;
 import com.koushikdutta.ion.HeadersCallback;
 import com.koushikdutta.ion.Ion;
 import com.koushikdutta.ion.Response;
-import com.mvt.urlcaster.helpers.RegexHelper;
+import com.mvt.derpcast.helpers.RegexHelper;
 
 import java.io.InputStream;
 import java.util.ArrayList;

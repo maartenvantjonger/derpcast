@@ -1,4 +1,4 @@
-package com.mvt.urlcaster;
+package com.mvt.derpcast;
 
 public interface VideoScraperListener {
     void videoFound(VideoInfo videoInfo);

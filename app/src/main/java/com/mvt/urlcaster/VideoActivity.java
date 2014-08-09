@@ -1,4 +1,4 @@
-package com.mvt.urlcaster;
+package com.mvt.derpcast;
 
 import android.app.Activity;
 import android.content.Intent;

@@ -1,4 +1,4 @@
-package com.mvt.urlcaster;
+package com.mvt.derpcast;
 
 import android.content.Context;
 import android.os.Build;
@@ -9,8 +9,10 @@ import android.widget.BaseAdapter;
 import android.widget.TextView;
 
 import com.connectsdk.device.ConnectableDevice;
+import com.connectsdk.discovery.CapabilityFilter;
 import com.connectsdk.discovery.DiscoveryManager;
 import com.connectsdk.discovery.DiscoveryManagerListener;
+import com.connectsdk.service.capability.MediaPlayer;
 import com.connectsdk.service.command.ServiceCommandError;
 
 import java.util.ArrayList;
@@ -18,8 +20,14 @@ import java.util.List;
 
 public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListener {
 
+    interface DeviceAddedListener {
+        public void onDeviceAdded(ConnectableDevice device);
+    }
+
     private final String TAG = "DeviceAdapter";
     private List<ConnectableDevice > _devices = new ArrayList<ConnectableDevice>();
+    private DeviceAddedListener _deviceAddedListener;
+    private final Object _syncRoot = new Object();
 
     public DeviceAdapter(Context context) {
         ConnectableDevice localDevice = new ConnectableDevice();
@@ -29,7 +37,11 @@ public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListen
         _devices.add(localDevice);
 
         DiscoveryManager.init(context);
-        DiscoveryManager.getInstance().addListener(this);
+        DiscoveryManager discoveryManager = DiscoveryManager.getInstance();
+        discoveryManager.setCapabilityFilters(new CapabilityFilter(MediaPlayer.Display_Video));
+        discoveryManager.setPairingLevel(DiscoveryManager.PairingLevel.ON);
+        discoveryManager.addListener(DeviceAdapter.this);
+        discoveryManager.start();
     }
 
     @Override
@@ -64,14 +76,15 @@ public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListen
         titleTextView.setText(device.getFriendlyName());
 
         TextView protocolTextView = (TextView) view.findViewById(R.id.protocol_text_view);
+        View connectedImageView = view.findViewById(R.id.connected_image_view);
+
         if (device.getId().equals("local")) {
             protocolTextView.setText("Local video player");
+            connectedImageView.setVisibility(View.INVISIBLE);
         }
         else {
             String serviceNames = device.getConnectedServiceNames();
             protocolTextView.setText(serviceNames);
-
-            View connectedImageView = view.findViewById(R.id.connected_image_view);
             connectedImageView.setVisibility(device.isConnected() ? View.VISIBLE : View.INVISIBLE);
         }
 
@@ -80,28 +93,47 @@ public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListen
 
     @Override
     public void onDeviceAdded(DiscoveryManager manager, ConnectableDevice device) {
-        if (!_devices.contains(device)) {
+        synchronized (_syncRoot) {
+            String deviceId = device.getId();
+
+            for (ConnectableDevice addedDevice: _devices) {
+              if (deviceId.equals(addedDevice.getId())) return;
+            }
+
             _devices.add(device);
             notifyDataSetChanged();
+
+            if (_deviceAddedListener != null)
+                _deviceAddedListener.onDeviceAdded(device);
         }
     }
 
     @Override
     public void onDeviceUpdated(DiscoveryManager manager, ConnectableDevice device) {
-
+        notifyDataSetChanged();
     }
 
     @Override
     public void onDeviceRemoved(DiscoveryManager manager, ConnectableDevice device) {
-        if (_devices.contains(device)) {
-            _devices.remove(device);
-            notifyDataSetChanged();
+        synchronized (_syncRoot) {
+            String deviceId = device.getId();
+
+            for (ConnectableDevice addedDevice: _devices) {
+                if (deviceId.equals(addedDevice.getId())) {
+                    _devices.remove(device);
+                    notifyDataSetChanged();
+                }
+            }
         }
     }
 
     @Override
     public void onDiscoveryFailed(DiscoveryManager manager, ServiceCommandError error) {
 
+    }
+
+    public void setDeviceAddedListener(DeviceAddedListener deviceAddedListener) {
+        _deviceAddedListener = deviceAddedListener;
     }
 }
 

@@ -31,7 +31,8 @@
         android:id="@+id/seek_bar_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:visibility="gone" >
 
         <TextView android:id="@+id/time_current"
             android:textSize="14sp"

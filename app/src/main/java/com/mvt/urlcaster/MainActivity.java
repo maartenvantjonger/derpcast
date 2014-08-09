@@ -1,4 +1,4 @@
-package com.mvt.urlcaster;
+package com.mvt.derpcast;
 
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -23,9 +23,7 @@ import android.widget.TextView;
 import com.connectsdk.device.ConnectableDevice;
 import com.connectsdk.device.ConnectableDeviceListener;
 import com.connectsdk.device.PairingDialog;
-import com.connectsdk.discovery.CapabilityFilter;
 import com.connectsdk.discovery.DiscoveryManager;
-import com.connectsdk.discovery.DiscoveryManagerListener;
 import com.connectsdk.service.DeviceService;
 import com.connectsdk.service.capability.MediaControl;
 import com.connectsdk.service.capability.MediaPlayer;
@@ -37,7 +35,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MainActivity extends ActionBarActivity implements ConnectableDeviceListener, DiscoveryManagerListener {
+public class MainActivity extends ActionBarActivity implements ConnectableDeviceListener {
 
     private static final String TAG = "MainActivity";
     private ConnectableDevice _device;
@@ -72,7 +70,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                             public void onSuccess(Object object) {
                                 //playProgressBar.setVisibility(View.GONE);
                                 //playButton.setVisibility(View.VISIBLE);
-                                playButton.setBackgroundResource(android.R.drawable.ic_media_pause);
+                                //playButton.setBackgroundResource(android.R.drawable.ic_media_pause);
                                 _playState = MediaControl.PlayStateStatus.Playing;
                             }
 
@@ -92,7 +90,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                             public void onSuccess(Object object) {
                                 //playProgressBar.setVisibility(View.GONE);
                                 //playButton.setVisibility(View.VISIBLE);
-                                playButton.setBackgroundResource(android.R.drawable.ic_media_play);
+                                //playButton.setBackgroundResource(android.R.drawable.ic_media_play);
                                 _playState = MediaControl.PlayStateStatus.Paused;
                             }
 
@@ -112,7 +110,8 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             public boolean onLongClick(View view) {
                 if (_device != null) {
                     _device.getMediaControl().stop(null);
-                    mediaController.setVisibility(View.GONE);
+                    _playState = MediaControl.PlayStateStatus.Paused;
+                    findViewById(R.id.seek_bar_layout).setVisibility(View.GONE);
                 }
 
                 return true;
@@ -142,39 +141,45 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if (_device != null && _playState == MediaControl.PlayStateStatus.Playing) {
+                if (_device != null && seekBar.isShown() &&
+                    _playState == MediaControl.PlayStateStatus.Playing) {
                     _device.getMediaControl().getPosition(new MediaControl.PositionListener() {
                         @Override
                         public void onSuccess(Long position) {
                             if (_videoDuration > 0) {
                                 double progress = (position / (double) _videoDuration) * 1000;
                                 currentTime.setText(stringForTime(position));
-                                seekBar.setProgress((int)progress);
+                                seekBar.setProgress((int) progress);
                             }
                         }
 
                         @Override
-                        public void onError(ServiceCommandError error) {}
+                        public void onError(ServiceCommandError error) {
+                        }
                     });
                 }
             }
         }, 1000, 1000);
 
-        DiscoveryManager.init(getApplicationContext());
-        DiscoveryManager discoveryManager = DiscoveryManager.getInstance();
-        discoveryManager.setCapabilityFilters(new CapabilityFilter(MediaPlayer.Display_Video));
-        discoveryManager.setPairingLevel(DiscoveryManager.PairingLevel.ON);
-        discoveryManager.addListener(MainActivity.this);
-        discoveryManager.start();
-
-        /*ConnectivityManager connManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo wifiInfo = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-
-        if (wifiInfo.isConnected()) {
-            discoveryManager.start();
-        }*/
-
         _deviceAdapter = new DeviceAdapter(MainActivity.this);
+        _deviceAdapter.setDeviceAddedListener(new DeviceAdapter.DeviceAddedListener() {
+            @Override
+            public void onDeviceAdded(final ConnectableDevice device) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (_device == null) {
+                            String lastDevice = PreferenceManager
+                                    .getDefaultSharedPreferences(MainActivity.this)
+                                    .getString("lastDevice", null);
+                            if (device.getId().equals(lastDevice)) {
+                                connectDevice(device);
+                            }
+                        }
+                    }
+                });
+            }
+        });
 
         final ListView deviceListView = (ListView)findViewById(R.id.device_list_view);
         deviceListView.setAdapter(_deviceAdapter);
@@ -301,7 +306,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     @Override
     protected void onResume() {
         super.onResume();
-        DiscoveryManager.getInstance().start();
+        //DiscoveryManager.getInstance().start();
     }
 
     @Override
@@ -333,12 +338,10 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             }
             else {
                 //findViewById(R.id.play_button).setVisibility(View.GONE);
-                findViewById(R.id.seek_bar_layout).setVisibility(View.GONE);
                 //findViewById(R.id.play_progess_bar).setVisibility(View.VISIBLE);
-                findViewById(R.id.media_controller).setVisibility(View.VISIBLE);
 
                 final MediaControl mediaControl = _device.getMediaControl();
-                MediaPlayer mediaPlayer = _device.getMediaPlayer();
+                final MediaPlayer mediaPlayer = _device.getMediaPlayer();
                 if (mediaPlayer != null) {
                     mediaPlayer.playMedia(videoInfo.url, videoInfo.format, videoInfo.title, null, null, false, new MediaPlayer.LaunchListener() {
                         public void onSuccess(MediaPlayer.MediaLaunchObject object) {
@@ -361,35 +364,45 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                                 }
                             });
 
-                            if (_device.hasCapability(MediaControl.Seek) &&
-                                    _device.hasCapability(MediaControl.Duration)) {
-                                mediaControl.getDuration(new MediaControl.DurationListener() {
-                                    @Override
-                                    public void onSuccess(Long duration) {
-                                        _videoDuration = duration;
-
-                                        TextView currentTime = (TextView) findViewById(R.id.time_current);
-                                        currentTime.setText(stringForTime(0));
-
-                                        TextView time = (TextView) findViewById(R.id.time);
-                                        time.setText(stringForTime(_videoDuration));
-
-                                        findViewById(R.id.seek_bar_layout).setVisibility(View.VISIBLE);
-                                    }
-
-                                    @Override
-                                    public void onError(ServiceCommandError error) {
-                                    }
-                                });
-                            }
+                            initializeMediaController();
                         }
 
                         @Override
                         public void onError(ServiceCommandError error) {
-                            findViewById(R.id.media_controller).setVisibility(View.GONE);
                         }
                     });
                 }
+            }
+        }
+    }
+
+    private void initializeMediaController() {
+
+        if (_device != null) {
+            findViewById(R.id.media_controller).setVisibility(View.VISIBLE);
+
+            if (_device.hasCapability(MediaControl.Seek) &&
+                    _device.hasCapability(MediaControl.Duration)) {
+
+                MediaControl mediaControl = _device.getMediaControl();
+                mediaControl.getDuration(new MediaControl.DurationListener() {
+                    @Override
+                    public void onSuccess(Long duration) {
+                        _videoDuration = duration;
+
+                        TextView currentTime = (TextView) findViewById(R.id.time_current);
+                        currentTime.setText(stringForTime(0));
+
+                        TextView time = (TextView) findViewById(R.id.time);
+                        time.setText(stringForTime(_videoDuration));
+
+                        findViewById(R.id.seek_bar_layout).setVisibility(View.VISIBLE);
+                    }
+
+                    @Override
+                    public void onError(ServiceCommandError error) {
+                    }
+                });
             }
         }
     }
@@ -460,9 +473,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 public void run() {
                     _connectItem.setIcon(R.drawable.ic_media_route_off_holo_light);
                     _connectItem.setTitle(R.string.cast);
-
                     _deviceAdapter.notifyDataSetChanged();
-
                     findViewById(R.id.media_controller).setVisibility(View.GONE);
                 }
             });
@@ -485,44 +496,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             }
         }
         return super.onKeyDown(keyCode, event);
-    }
-
-    @Override
-    public void onDeviceAdded(DiscoveryManager manager, ConnectableDevice device) {
-        Log.i(TAG, "onDeviceAdded: " + device.getFriendlyName());
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (!_connectItem.isEnabled()) {
-                    _connectItem.setIcon(R.drawable.ic_media_route_off_holo_light);
-                }
-            }
-        });
-
-        if (_device == null || !_device.isConnected()) {
-            String lastDevice = PreferenceManager
-                    .getDefaultSharedPreferences(MainActivity.this)
-                    .getString("lastDevice", null);
-            if (device.getId().equals(lastDevice)) {
-                connectDevice(device);
-            }
-        }
-    }
-
-    @Override
-    public void onDeviceRemoved(DiscoveryManager manager, ConnectableDevice device) {
-
-    }
-
-    @Override
-    public void onDeviceUpdated(DiscoveryManager manager, ConnectableDevice device) {
-
-    }
-
-    @Override
-    public void onDiscoveryFailed(DiscoveryManager manager, ServiceCommandError error) {
-
     }
 
     @Override
@@ -566,10 +539,8 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             public void run() {
                 _connectItem.setIcon(R.drawable.ic_media_route_on_holo_light);
                 _connectItem.setTitle(device.getModelName());
-
                 _deviceAdapter.notifyDataSetChanged();
-
-
+                initializeMediaController();
                 playQueuedVideo();
             }
         });

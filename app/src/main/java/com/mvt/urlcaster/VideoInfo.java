@@ -1,4 +1,4 @@
-package com.mvt.urlcaster;
+package com.mvt.derpcast;
 
 public class VideoInfo implements Comparable<VideoInfo> {
     public String title;
