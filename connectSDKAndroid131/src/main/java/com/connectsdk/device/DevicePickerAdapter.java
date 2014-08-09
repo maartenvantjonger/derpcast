@@ -76,26 +76,22 @@ public class DevicePickerAdapter extends ArrayAdapter<ConnectableDevice> {
 		textView.setText(text);
 		//textView.setTextColor(Color.WHITE);
 
+        boolean isDebuggable =  ( 0 != ( context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE ) );
+        boolean hasNoFilters = DiscoveryManager.getInstance().getCapabilityFilters().size() == 0;
+
+        String serviceNames = device.getConnectedServiceNames();
+        boolean hasServiceNames = (serviceNames != null && serviceNames.length() > 0);
+
+        boolean shouldShowServiceNames = hasServiceNames && (isDebuggable || hasNoFilters);
+
         TextView subTextView = (TextView) view.findViewById(subTextViewResourceId);
-        if (device.getId().equals("local")) {
-            subTextView.setText("Local video player");
+        if (shouldShowServiceNames) {
+            subTextView.setText(serviceNames);
+            //subTextView.setTextColor(Color.WHITE);
+        } else {
+            subTextView.setText(null);
         }
-        else {
-            boolean isDebuggable =  ( 0 != ( context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE ) );
-            boolean hasNoFilters = DiscoveryManager.getInstance().getCapabilityFilters().size() == 0;
 
-            String serviceNames = device.getConnectedServiceNames();
-            boolean hasServiceNames = (serviceNames != null && serviceNames.length() > 0);
-
-            boolean shouldShowServiceNames = hasServiceNames && (isDebuggable || hasNoFilters);
-
-            if (shouldShowServiceNames) {
-                subTextView.setText(serviceNames);
-                //subTextView.setTextColor(Color.WHITE);
-            } else {
-                subTextView.setText(null);
-            }
-        }
 		
 		return view;
 	}

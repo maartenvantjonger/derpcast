@@ -3,8 +3,8 @@
 
     <string name="app_name">DerpCast</string>
     <string name="cast">Cast</string>
-    <string name="credits">Credits</string>
-    <string name="credits_message">\nCreated by Maarten van Tjonger\nPowered by ConnectSDK.com\n</string>
+    <string name="about">About</string>
+    <string name="about_message">\nCreated by Maarten van Tjonger\nPowered by ConnectSDK.com</string>
     <string name="usage">Load videos by choosing DerpCast in your browser\'s share dialog.</string>
     <string name="no_videos">Sorry, no supported videos were found on this page.</string>
     <string name="title_activity_video">Video</string>

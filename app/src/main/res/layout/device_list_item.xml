@@ -33,11 +33,11 @@
 
     <ImageView
         android:id="@+id/connected_image_view"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
+        android:layout_width="8dp"
+        android:layout_height="8dp"
         android:layout_centerVertical="true"
         android:layout_alignParentRight="true"
         android:visibility="invisible"
-        android:src="@drawable/ic_media_route_off_holo_dark" />
+        android:src="@drawable/white_square" />
 
 </RelativeLayout>

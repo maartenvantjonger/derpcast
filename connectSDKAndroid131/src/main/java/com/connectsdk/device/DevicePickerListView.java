@@ -21,7 +21,6 @@
 package com.connectsdk.device;
 
 import android.content.Context;
-import android.os.Build;
 import android.widget.ListView;
 
 import com.connectsdk.core.Util;
@@ -35,13 +34,7 @@ public class DevicePickerListView extends ListView implements DiscoveryManagerLi
 	public DevicePickerListView(Context context) {
 		super(context);
 
-        ConnectableDevice localDevice = new ConnectableDevice();
-        localDevice.setId("local");
-        localDevice.setIpAddress("127.0.0.1");
-        localDevice.setFriendlyName(Build.MODEL);
-
         pickerAdapter = new DevicePickerAdapter(context);
-        pickerAdapter.add(localDevice);
         setAdapter(pickerAdapter);
 
 		DiscoveryManager.getInstance().addListener(this);

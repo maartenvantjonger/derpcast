@@ -38,6 +38,6 @@
         android:layout_centerVertical="true"
         android:layout_alignParentRight="true"
         android:visibility="invisible"
-        android:src="@drawable/circle" />
+        android:src="@drawable/orange_square" />
 
 </RelativeLayout>
