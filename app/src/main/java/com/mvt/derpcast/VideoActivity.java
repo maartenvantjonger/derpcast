@@ -12,24 +12,23 @@ import android.widget.MediaController;
 import android.widget.VideoView;
 
 public class VideoActivity extends Activity {
-    private static final int AUTO_HIDE_DELAY_MILLIS = 2000;
     private View _decorView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.activity_video);
+        setContentView(R.layout.activity_mediaplayer);
 
         Intent intent = getIntent();
-        String videoUrl = intent.getStringExtra("videoUrl");
+        String mediaUrl = intent.getStringExtra("mediaUrl");
 
         final MediaController mediaController = new MediaController(this);
-        final VideoView videoView = (VideoView)findViewById(R.id.video_view);
-        videoView.setVideoURI(Uri.parse(videoUrl));
-        videoView.start();
-        videoView.setMediaController(mediaController);
-        videoView.setOnKeyListener(new View.OnKeyListener() {
+        final VideoView mediaView = (VideoView)findViewById(R.id.media_view);
+        mediaView.setVideoURI(Uri.parse(mediaUrl));
+        mediaView.start();
+        mediaView.setMediaController(mediaController);
+        mediaView.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
                 if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_BACK) {
@@ -39,7 +38,7 @@ public class VideoActivity extends Activity {
                 return false;
             }
         });
-        videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+        mediaView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
                 finish();
@@ -61,8 +60,8 @@ public class VideoActivity extends Activity {
     protected void onResume() {
         super.onResume();
 
-        VideoView videoView = (VideoView)findViewById(R.id.video_view);
-        videoView.start();
+        VideoView mediaView = (VideoView)findViewById(R.id.media_view);
+        mediaView.start();
     }
 
     @Override

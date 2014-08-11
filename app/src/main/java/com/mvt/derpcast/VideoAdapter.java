@@ -12,15 +12,13 @@ import java.util.List;
 
 public class VideoAdapter extends BaseAdapter {
 
-    private final String TAG = "VideoAdapter";
-    private List<VideoInfo> _videoInfos = new ArrayList<VideoInfo>();
-    private VideoInfo _playingVideoInfo;
-    private final Object _syncRoot = new Object();
+    private List<MediaInfo> _mediaInfos = new ArrayList<MediaInfo>();
+    private MediaInfo _playingVideoInfo;
 
-    public synchronized void addVideoInfo(VideoInfo videoInfo) {
-        if (!_videoInfos.contains(videoInfo)) {
-            _videoInfos.add(videoInfo);
-            Collections.sort(_videoInfos);
+    public synchronized void addVideoInfo(MediaInfo mediaInfo) {
+        if (!_mediaInfos.contains(mediaInfo)) {
+            _mediaInfos.add(mediaInfo);
+            Collections.sort(_mediaInfos);
             notifyDataSetChanged();
         }
     }
@@ -30,13 +28,13 @@ public class VideoAdapter extends BaseAdapter {
         notifyDataSetChanged();
     }
 
-    public VideoInfo getPlayingVideo() {
+    public MediaInfo getPlayingVideo() {
         return _playingVideoInfo;
     }
 
     @Override
     public int getCount() {
-        return _videoInfos.size();
+        return _mediaInfos.size();
     }
 
     @Override
@@ -44,8 +42,8 @@ public class VideoAdapter extends BaseAdapter {
         return getVideoInfo(i);
     }
 
-    public VideoInfo getVideoInfo(int i) {
-        return _videoInfos.get(i);
+    public MediaInfo getVideoInfo(int i) {
+        return _mediaInfos.get(i);
     }
 
     @Override
@@ -57,21 +55,21 @@ public class VideoAdapter extends BaseAdapter {
     public View getView(int i, View view, final ViewGroup viewGroup) {
         if (view == null) {
             LayoutInflater inflater = LayoutInflater.from(viewGroup.getContext());
-            view = inflater.inflate(R.layout.video_list_item, viewGroup, false);
+            view = inflater.inflate(R.layout.media_list_item, viewGroup, false);
         }
 
-        final VideoInfo videoInfo = getVideoInfo(i);
+        final MediaInfo mediaInfo = getVideoInfo(i);
 
         TextView titleTextView = (TextView) view.findViewById(R.id.title_text_view);
-        titleTextView.setText(videoInfo.title.toLowerCase());
+        titleTextView.setText(mediaInfo.title.toLowerCase());
 
         TextView sizeTextView = (TextView) view.findViewById(R.id.size_text_view);
 
-        int megaBytes = (int)Math.ceil(videoInfo.size / 1048576d);
+        int megaBytes = (int)Math.ceil(mediaInfo.size / 1048576d);
         sizeTextView.setText(megaBytes + "MB");
 
         View playingImageView = view.findViewById(R.id.playing_image_view);
-        playingImageView.setVisibility(videoInfo == _playingVideoInfo ? View.VISIBLE : View.INVISIBLE);
+        playingImageView.setVisibility(mediaInfo == _playingVideoInfo ? View.VISIBLE : View.INVISIBLE);
 
         return view;
     }

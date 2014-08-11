@@ -13,13 +13,12 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class VideoScraper {
+public class MediaScraper {
 
-    private static final String TAG = "VideoScraper";
-    private List<VideoInfo> _foundVideoInfos = new ArrayList<VideoInfo>();
+    private List<MediaInfo> _foundMediaInfos = new ArrayList<MediaInfo>();
     private int _activeRequestCount = 0;
 
-    public void scrape(final Context context, final String pageUrl, final int iframeDepth, final VideoScraperListener listener) {
+    public void scrape(final Context context, final String pageUrl, final int iframeDepth, final MediaScraperListener listener) {
         if (pageUrl != null) {
             _activeRequestCount++;
 
@@ -43,19 +42,19 @@ public class VideoScraper {
                                     listener.pageTitleFound(pageTitle);
                                 }
 
-                                List<String> videoUrls = RegexHelper.getMatches("(https?://[^'^\"]+\\.mp4(?:\\?.+)?)['\"]", html);
-                                for (final String videoUrl : videoUrls) {
-                                    synchronized (VideoScraper.this) {
-                                        final VideoInfo videoInfo = new VideoInfo(videoUrl);
+                                List<String> mediaUrls = RegexHelper.getMatches("(https?://[^'^\"]+\\.mp4(?:\\?.+)?)['\"]", html);
+                                for (final String mediaUrl : mediaUrls) {
+                                    synchronized (MediaScraper.this) {
+                                        final MediaInfo mediaInfo = new MediaInfo(mediaUrl);
 
-                                        if (!_foundVideoInfos.contains(videoUrl)) {
-                                            _foundVideoInfos.add(videoInfo);
-                                            addVideoMetaData(context, videoInfo, listener);
+                                        if (!_foundMediaInfos.contains(mediaInfo)) {
+                                            _foundMediaInfos.add(mediaInfo);
+                                            addVideoMetaData(context, mediaInfo, listener);
                                         }
                                     }
                                 }
 
-                                if (iframeDepth > 0 && _foundVideoInfos.size() == 0) {
+                                if (iframeDepth > 0 && _foundMediaInfos.size() == 0) {
                                     List<String> iframeUrls = RegexHelper.getMatches("<iframe .*src=['\"](https?://.+?)['\"]", html);
                                     for (String iframeUrl : iframeUrls) {
                                         scrape(context, iframeUrl, iframeDepth - 1, listener);
@@ -65,31 +64,31 @@ public class VideoScraper {
                         }
 
                         if (_activeRequestCount <= 0) {
-                            listener.finished(_foundVideoInfos.size());
+                            listener.finished(_foundMediaInfos.size());
                         }
                     }
                 });
         }
     }
 
-    private void addVideoMetaData(final Context context, final VideoInfo videoInfo, final VideoScraperListener listener) {
+    private void addVideoMetaData(final Context context, final MediaInfo mediaInfo, final MediaScraperListener listener) {
         _activeRequestCount++;
 
         Ion.with(context)
-            .load("HEAD", videoInfo.url)
+            .load("HEAD", mediaInfo.url)
             .setTimeout(5000)
             .onHeaders(new HeadersCallback() {
                 @Override
                 public void onHeaders(RawHeaders rawHeaders) {
                     if (rawHeaders.getResponseCode() < 400) {
-                        videoInfo.format = rawHeaders.get("Content-Type");
-                        videoInfo.title = RegexHelper.getFirstMatch("([^/^=]+\\.mp4)", videoInfo.url);
+                        mediaInfo.format = rawHeaders.get("Content-Type");
+                        mediaInfo.title = RegexHelper.getFirstMatch("([^/^=]+\\.mp4)", mediaInfo.url);
 
                         try {
-                            videoInfo.size = Long.parseLong(rawHeaders.get("Content-Length"));
+                            mediaInfo.size = Long.parseLong(rawHeaders.get("Content-Length"));
                         } catch (NumberFormatException e) {}
 
-                        listener.videoFound(videoInfo);
+                        listener.mediaFound(mediaInfo);
                     }
                 }
             })
@@ -100,7 +99,7 @@ public class VideoScraper {
                 public void onCompleted(Exception e, Response<InputStream> inputStreamResponse) {
                     _activeRequestCount--;
                     if (_activeRequestCount <= 0) {
-                        listener.finished(_foundVideoInfos.size());
+                        listener.finished(_foundMediaInfos.size());
                     }
                 }
             });

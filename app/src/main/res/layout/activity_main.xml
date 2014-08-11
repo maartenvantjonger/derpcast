@@ -47,7 +47,7 @@
                 android:layout_height="match_parent">
 
                 <ListView
-                    android:id="@+id/video_list_view"
+                    android:id="@+id/media_list_view"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:animateLayoutChanges="true" />
@@ -56,7 +56,7 @@
                     android:id="@+id/loader_progress_bar"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_below="@id/video_list_view"
+                    android:layout_below="@id/media_list_view"
                     android:layout_centerHorizontal="true"
                     android:visibility="gone" />
 

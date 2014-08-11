@@ -34,14 +34,13 @@ import java.util.TimerTask;
 
 public class MainActivity extends ActionBarActivity implements ConnectableDeviceListener {
 
-    private static final String TAG = "MainActivity";
     private ConnectableDevice _device;
     private AlertDialog _pairingDialog;
     private MenuItem _connectItem;
-    private long _videoDuration;
+    private long _mediaDuration;
     private MediaControl.PlayStateStatus _playState;
     private DeviceAdapter _deviceAdapter;
-    private VideoAdapter _videoAdapter;
+    private VideoAdapter _mediaAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,7 +119,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean byUser) {
-                final long newPosition = (_videoDuration * progress) / 1000;
+                final long newPosition = (_mediaDuration * progress) / 1000;
                 currentTime.setText(stringForTime(newPosition));
             }
             @Override
@@ -129,7 +128,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 int progress = seekBar.getProgress();
-                long newPosition = (_videoDuration * progress) / 1000L;
+                long newPosition = (_mediaDuration * progress) / 1000L;
                 _device.getMediaControl().seek(newPosition, null);
             }
         });
@@ -143,8 +142,8 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                     _device.getMediaControl().getPosition(new MediaControl.PositionListener() {
                         @Override
                         public void onSuccess(Long position) {
-                            if (_videoDuration > 0) {
-                                double progress = (position / (double) _videoDuration) * 1000;
+                            if (_mediaDuration > 0) {
+                                double progress = (position / (double) _mediaDuration) * 1000;
                                 currentTime.setText(stringForTime(position));
                                 seekBar.setProgress((int) progress);
                             }
@@ -207,15 +206,15 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             .setNegativeButton("Cancel", null)
             .create();
 
-        _videoAdapter = new VideoAdapter();
+        _mediaAdapter = new VideoAdapter();
 
-        ListView videoListView = (ListView)findViewById(R.id.video_list_view);
-        videoListView.setAdapter(_videoAdapter);
-        videoListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        ListView mediaListView = (ListView)findViewById(R.id.media_list_view);
+        mediaListView.setAdapter(_mediaAdapter);
+        mediaListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                _videoAdapter.setPlayingVideoInfo(i);
-                playQueuedVideo();
+                _mediaAdapter.setPlayingVideoInfo(i);
+                playQueuedMedia();
             }
         });
 
@@ -231,11 +230,11 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             findViewById(R.id.loader_progress_bar).setVisibility(View.VISIBLE);
             preferences.edit().putString("pageUrl", pageUrl).commit();
 
-            VideoScraper videoScraper = new VideoScraper();
-            videoScraper.scrape(MainActivity.this, pageUrl, 2, new VideoScraperListener() {
+            MediaScraper mediaScraper = new MediaScraper();
+            mediaScraper.scrape(MainActivity.this, pageUrl, 2, new MediaScraperListener() {
                 @Override
-                public void videoFound(VideoInfo videoInfo) {
-                    _videoAdapter.addVideoInfo(videoInfo);
+                public void mediaFound(MediaInfo mediaInfo) {
+                    _mediaAdapter.addVideoInfo(mediaInfo);
                 }
 
                 @Override
@@ -252,15 +251,15 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 }
 
                 @Override
-                public void finished(final int videosFound) {
+                public void finished(final int mediaFound) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             findViewById(R.id.loader_progress_bar).setVisibility(View.GONE);
 
-                            if (videosFound == 0) {
+                            if (mediaFound == 0) {
                                 TextView titleTextView = (TextView) findViewById(R.id.title_text_view);
-                                titleTextView.setText(R.string.no_videos);
+                                titleTextView.setText(R.string.no_media);
                             }
                         }
                     });
@@ -316,19 +315,19 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         return true;
     }
 
-    private void playQueuedVideo() {
+    private void playQueuedMedia() {
 
         if (_device == null) {
             toggleDeviceMenu(true);
             return;
         }
 
-        VideoInfo videoInfo = _videoAdapter.getPlayingVideo();
-        if (videoInfo != null) {
+        MediaInfo mediaInfo = _mediaAdapter.getPlayingVideo();
+        if (mediaInfo != null) {
             if (_device instanceof LocalDevice) {
                 Intent intent = new Intent();
                 intent.setClass(MainActivity.this, VideoActivity.class);
-                intent.putExtra("videoUrl", videoInfo.url);
+                intent.putExtra("mediaUrl", mediaInfo.url);
                 startActivity(intent);
             }
             else {
@@ -338,7 +337,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 final MediaControl mediaControl = _device.getMediaControl();
                 final MediaPlayer mediaPlayer = _device.getMediaPlayer();
                 if (mediaPlayer != null) {
-                    mediaPlayer.playMedia(videoInfo.url, videoInfo.format, videoInfo.title, null, null, false, new MediaPlayer.LaunchListener() {
+                    mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, mediaInfo.title, null, null, false, new MediaPlayer.LaunchListener() {
                         public void onSuccess(MediaPlayer.MediaLaunchObject object) {
                             //findViewById(R.id.play_button).setVisibility(View.VISIBLE);
                             //findViewById(R.id.play_progess_bar).setVisibility(View.GONE);
@@ -383,13 +382,13 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 mediaControl.getDuration(new MediaControl.DurationListener() {
                     @Override
                     public void onSuccess(Long duration) {
-                        _videoDuration = duration;
+                        _mediaDuration = duration;
 
                         TextView currentTime = (TextView) findViewById(R.id.time_current);
                         currentTime.setText(stringForTime(0));
 
                         TextView time = (TextView) findViewById(R.id.time);
-                        time.setText(stringForTime(_videoDuration));
+                        time.setText(stringForTime(_mediaDuration));
 
                         findViewById(R.id.seek_bar_layout).setVisibility(View.VISIBLE);
                     }
@@ -508,7 +507,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
                 _deviceAdapter.notifyDataSetChanged();
                 initializeMediaController();
-                playQueuedVideo();
+                playQueuedMedia();
             }
         });
     }
