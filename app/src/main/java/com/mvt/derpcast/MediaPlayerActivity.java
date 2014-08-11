@@ -11,7 +11,7 @@ import android.view.View;
 import android.widget.MediaController;
 import android.widget.VideoView;
 
-public class VideoActivity extends Activity {
+public class MediaPlayerActivity extends Activity {
     private View _decorView;
 
     @Override
@@ -32,7 +32,7 @@ public class VideoActivity extends Activity {
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
                 if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_BACK) {
-                    VideoActivity.this.finish();
+                    MediaPlayerActivity.this.finish();
                     return true;
                 }
                 return false;

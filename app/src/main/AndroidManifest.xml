@@ -37,7 +37,7 @@
         </activity>
 
         <activity
-            android:name=".VideoActivity"
+            android:name=".MediaPlayerActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:parentActivityName=".MainActivity"
             android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen" >

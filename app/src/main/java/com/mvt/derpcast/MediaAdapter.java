@@ -10,12 +10,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class VideoAdapter extends BaseAdapter {
+public class MediaAdapter extends BaseAdapter {
 
     private List<MediaInfo> _mediaInfos = new ArrayList<MediaInfo>();
-    private MediaInfo _playingVideoInfo;
+    private MediaInfo _playingMediaInfo;
 
-    public synchronized void addVideoInfo(MediaInfo mediaInfo) {
+    public synchronized void addMediaInfo(MediaInfo mediaInfo) {
         if (!_mediaInfos.contains(mediaInfo)) {
             _mediaInfos.add(mediaInfo);
             Collections.sort(_mediaInfos);
@@ -23,13 +23,13 @@ public class VideoAdapter extends BaseAdapter {
         }
     }
 
-    public void setPlayingVideoInfo(int i) {
-        _playingVideoInfo = getVideoInfo(i);
+    public void setPlayingMediaInfo(int i) {
+        _playingMediaInfo = getMediaInfo(i);
         notifyDataSetChanged();
     }
 
-    public MediaInfo getPlayingVideo() {
-        return _playingVideoInfo;
+    public MediaInfo getPlayingMedia() {
+        return _playingMediaInfo;
     }
 
     @Override
@@ -39,10 +39,10 @@ public class VideoAdapter extends BaseAdapter {
 
     @Override
     public Object getItem(int i) {
-        return getVideoInfo(i);
+        return getMediaInfo(i);
     }
 
-    public MediaInfo getVideoInfo(int i) {
+    public MediaInfo getMediaInfo(int i) {
         return _mediaInfos.get(i);
     }
 
@@ -58,7 +58,7 @@ public class VideoAdapter extends BaseAdapter {
             view = inflater.inflate(R.layout.media_list_item, viewGroup, false);
         }
 
-        final MediaInfo mediaInfo = getVideoInfo(i);
+        final MediaInfo mediaInfo = getMediaInfo(i);
 
         TextView titleTextView = (TextView) view.findViewById(R.id.title_text_view);
         titleTextView.setText(mediaInfo.title.toLowerCase());
@@ -69,7 +69,7 @@ public class VideoAdapter extends BaseAdapter {
         sizeTextView.setText(megaBytes + "MB");
 
         View playingImageView = view.findViewById(R.id.playing_image_view);
-        playingImageView.setVisibility(mediaInfo == _playingVideoInfo ? View.VISIBLE : View.INVISIBLE);
+        playingImageView.setVisibility(mediaInfo == _playingMediaInfo ? View.VISIBLE : View.INVISIBLE);
 
         return view;
     }

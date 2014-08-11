@@ -28,6 +28,7 @@ import com.connectsdk.service.capability.VolumeControl;
 import com.connectsdk.service.capability.listeners.ResponseListener;
 import com.connectsdk.service.command.ServiceCommandError;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -40,7 +41,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     private long _mediaDuration;
     private MediaControl.PlayStateStatus _playState;
     private DeviceAdapter _deviceAdapter;
-    private VideoAdapter _mediaAdapter;
+    private MediaAdapter _mediaAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -206,14 +207,14 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             .setNegativeButton("Cancel", null)
             .create();
 
-        _mediaAdapter = new VideoAdapter();
+        _mediaAdapter = new MediaAdapter();
 
         ListView mediaListView = (ListView)findViewById(R.id.media_list_view);
         mediaListView.setAdapter(_mediaAdapter);
         mediaListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                _mediaAdapter.setPlayingVideoInfo(i);
+                _mediaAdapter.setPlayingMediaInfo(i);
                 playQueuedMedia();
             }
         });
@@ -230,11 +231,14 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             findViewById(R.id.loader_progress_bar).setVisibility(View.VISIBLE);
             preferences.edit().putString("pageUrl", pageUrl).commit();
 
-            MediaScraper mediaScraper = new MediaScraper();
+            List<String> mediaFormats = new ArrayList<String>();
+            mediaFormats.add("mp4");
+
+            MediaScraper mediaScraper = new MediaScraper(mediaFormats);
             mediaScraper.scrape(MainActivity.this, pageUrl, 2, new MediaScraperListener() {
                 @Override
                 public void mediaFound(MediaInfo mediaInfo) {
-                    _mediaAdapter.addVideoInfo(mediaInfo);
+                    _mediaAdapter.addMediaInfo(mediaInfo);
                 }
 
                 @Override
@@ -322,11 +326,11 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             return;
         }
 
-        MediaInfo mediaInfo = _mediaAdapter.getPlayingVideo();
+        MediaInfo mediaInfo = _mediaAdapter.getPlayingMedia();
         if (mediaInfo != null) {
             if (_device instanceof LocalDevice) {
                 Intent intent = new Intent();
-                intent.setClass(MainActivity.this, VideoActivity.class);
+                intent.setClass(MainActivity.this, MediaPlayerActivity.class);
                 intent.putExtra("mediaUrl", mediaInfo.url);
                 startActivity(intent);
             }

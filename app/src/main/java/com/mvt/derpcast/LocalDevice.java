@@ -20,7 +20,7 @@ public class LocalDevice extends ConnectableDevice {
         setFriendlyName(Build.MODEL);
 
         ServiceDescription serviceDescription = new ServiceDescription();
-        serviceDescription.setServiceID("Local Video Player");
+        serviceDescription.setServiceID("Local Media Player");
         addService(new DeviceService(serviceDescription, null));
     }
 

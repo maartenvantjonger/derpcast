@@ -15,8 +15,13 @@ import java.util.List;
 
 public class MediaScraper {
 
+    private List<String> _mediaFormats;
     private List<MediaInfo> _foundMediaInfos = new ArrayList<MediaInfo>();
     private int _activeRequestCount = 0;
+
+    public MediaScraper(List<String> mediaFormats) {
+        _mediaFormats = mediaFormats;
+    }
 
     public void scrape(final Context context, final String pageUrl, final int iframeDepth, final MediaScraperListener listener) {
         if (pageUrl != null) {
@@ -49,7 +54,7 @@ public class MediaScraper {
 
                                         if (!_foundMediaInfos.contains(mediaInfo)) {
                                             _foundMediaInfos.add(mediaInfo);
-                                            addVideoMetaData(context, mediaInfo, listener);
+                                            addMediaMetaData(context, mediaInfo, listener);
                                         }
                                     }
                                 }
@@ -71,7 +76,7 @@ public class MediaScraper {
         }
     }
 
-    private void addVideoMetaData(final Context context, final MediaInfo mediaInfo, final MediaScraperListener listener) {
+    private void addMediaMetaData(final Context context, final MediaInfo mediaInfo, final MediaScraperListener listener) {
         _activeRequestCount++;
 
         Ion.with(context)
