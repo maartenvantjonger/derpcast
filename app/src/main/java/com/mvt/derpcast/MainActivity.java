@@ -7,13 +7,10 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.ImageButton;
 import android.widget.ListView;
@@ -256,8 +253,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
                 @Override
                 public void finished(final int videosFound) {
-                    Log.i(TAG, "All done!");
-
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -298,14 +293,20 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        //DiscoveryManager.getInstance().start();
+    protected void onDestroy() {
+        DiscoveryManager.destroy();
+        super.onDestroy();
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
+    public void onBackPressed() {
+        View deviceLayout = findViewById(R.id.device_layout);
+        if (deviceLayout.isShown()) {
+            toggleDeviceMenu(false);
+        }
+        else {
+            super.onBackPressed();
+        }
     }
 
     @Override
@@ -421,31 +422,8 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     }
 
     private void toggleDeviceMenu(boolean keepOpen) {
-        final View deviceLayout = findViewById(R.id.device_layout);
-        final boolean visible = deviceLayout.getVisibility() == View.VISIBLE;
-        if (!visible || !keepOpen) {
-            int animation = visible ? R.anim.slide_up : R.anim.slide_down;
-            Animation slide = AnimationUtils.loadAnimation(MainActivity.this, animation);
-            slide.setAnimationListener(new Animation.AnimationListener() {
-                @Override
-                public void onAnimationStart(Animation animation) {
-                    if (!visible) {
-                        deviceLayout.setVisibility(View.VISIBLE);
-                    }
-                }
-
-                @Override
-                public void onAnimationEnd(Animation animation) {
-                    if (visible) {
-                        deviceLayout.setVisibility(View.GONE);
-                    }
-                }
-                @Override
-                public void onAnimationRepeat(Animation animation) {}
-            });
-
-            findViewById(R.id.main_layout).startAnimation(slide);
-        }
+        View deviceLayout = findViewById(R.id.device_layout);
+        deviceLayout.setVisibility(deviceLayout.isShown() && !keepOpen ? View.GONE : View.VISIBLE);
     }
 
     private void connectDevice(ConnectableDevice device) {
@@ -493,16 +471,12 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
     @Override
     public void onPairingRequired(ConnectableDevice device, DeviceService service, DeviceService.PairingType pairingType) {
-        Log.d(TAG, "Connected to " + _device.getIpAddress());
-
         switch (pairingType) {
             case FIRST_SCREEN:
-                Log.d(TAG, "First Screen");
                 _pairingDialog.show();
                 break;
 
             case PIN_CODE:
-                Log.d(TAG, "Pin Code");
                 PairingDialog dialog = new PairingDialog(MainActivity.this, _device);
                 dialog.getPairingDialog("Enter Pairing Code on TV").show();
                 break;
@@ -515,18 +489,15 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
     @Override
     public void onConnectionFailed(ConnectableDevice device, ServiceCommandError error) {
-        Log.d(TAG, "Failed to connect to " + device.getIpAddress());
         disconnectDevice();
     }
 
     @Override
     public void onDeviceReady(final ConnectableDevice device) {
         if (_pairingDialog.isShowing() ) {
-            Log.d(TAG, "onPairingSuccess");
             _pairingDialog.dismiss();
         }
 
-        Log.d(TAG, "successful register");
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -544,8 +515,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
     @Override
     public void onDeviceDisconnected(ConnectableDevice device) {
-        Log.d(TAG, "Device Disconnected");
-
         if (_pairingDialog.isShowing() ) {
             _pairingDialog.dismiss();
         }

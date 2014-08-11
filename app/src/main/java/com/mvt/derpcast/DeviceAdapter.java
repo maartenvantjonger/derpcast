@@ -16,6 +16,7 @@ import com.connectsdk.service.command.ServiceCommandError;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 
 public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListener {
 
@@ -24,12 +25,13 @@ public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListen
     }
 
     private final String TAG = "DeviceAdapter";
-    private List<ConnectableDevice > _devices = new ArrayList<ConnectableDevice>();
+    private List<ConnectableDevice> _devices = new ArrayList<ConnectableDevice>();
     private DeviceAddedListener _deviceAddedListener;
     private final Object _syncRoot = new Object();
 
     public DeviceAdapter(Context context) {
-        _devices.add(new LocalDevice());
+        ConnectableDevice localDevice = new LocalDevice();
+        _devices.add(localDevice);
 
         DiscoveryManager.init(context);
         DiscoveryManager discoveryManager = DiscoveryManager.getInstance();
@@ -107,9 +109,11 @@ public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListen
         synchronized (_syncRoot) {
             String deviceId = device.getId();
 
-            for (ConnectableDevice addedDevice: _devices) {
-                if (deviceId.equals(addedDevice.getId())) {
-                    _devices.remove(device);
+            ListIterator<ConnectableDevice> iterator = _devices.listIterator();
+            while (iterator.hasNext()) {
+                ConnectableDevice currentDevice = iterator.next();
+                if (deviceId.equals(currentDevice.getId())) {
+                    _devices.remove(currentDevice);
                     notifyDataSetChanged();
                 }
             }

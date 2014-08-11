@@ -1,7 +1,6 @@
 package com.mvt.derpcast;
 
 import android.content.Context;
-import android.util.Log;
 
 import com.koushikdutta.async.future.FutureCallback;
 import com.koushikdutta.async.http.libcore.RawHeaders;
@@ -21,8 +20,6 @@ public class VideoScraper {
     private int _activeRequestCount = 0;
 
     public void scrape(final Context context, final String pageUrl, final int iframeDepth, final VideoScraperListener listener) {
-        Log.i(TAG, "getVideoUrls depth: " + iframeDepth + " page: " + pageUrl);
-
         if (pageUrl != null) {
             _activeRequestCount++;
 
@@ -48,8 +45,6 @@ public class VideoScraper {
 
                                 List<String> videoUrls = RegexHelper.getMatches("(https?://[^'^\"]+\\.mp4(?:\\?.+)?)['\"]", html);
                                 for (final String videoUrl : videoUrls) {
-                                    System.out.println("Found video at depth: " + iframeDepth + " in page: " + pageUrl + " video url: " + videoUrl);
-
                                     synchronized (VideoScraper.this) {
                                         final VideoInfo videoInfo = new VideoInfo(videoUrl);
 
@@ -95,8 +90,6 @@ public class VideoScraper {
                         } catch (NumberFormatException e) {}
 
                         listener.videoFound(videoInfo);
-                    } else {
-                        Log.i(TAG, videoInfo.url + " returned status code " + rawHeaders.getResponseCode());
                     }
                 }
             })

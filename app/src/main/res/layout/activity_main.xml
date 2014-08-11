@@ -5,58 +5,66 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <LinearLayout
-        android:id="@+id/device_layout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:orientation="vertical"
-        android:background="#FF6A00"
-        android:visibility="gone">
-
-        <ListView
-            android:id="@+id/device_list_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/title_text_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="15dp"
-        android:layout_below="@id/device_layout"
-        android:textSize="16sp" />
-
-    <ScrollView
+    <RelativeLayout
+        android:id="@+id/slide_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true"
-        android:layout_below="@id/title_text_view"
-        android:layout_above="@+id/media_controller">
+        android:layout_above="@+id/media_controller"
+        android:animateLayoutChanges="true">
 
-        <RelativeLayout
+        <LinearLayout
+            android:id="@+id/device_layout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:orientation="vertical"
+            android:background="#FF6A00"
+            android:visibility="gone">
 
             <ListView
-                android:id="@+id/video_list_view"
+                android:id="@+id/device_list_view"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:animateLayoutChanges="true" />
+                android:layout_height="wrap_content" />
 
-            <ProgressBar
-                android:id="@+id/loader_progress_bar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/video_list_view"
-                android:layout_centerHorizontal="true"
-                android:visibility="gone" />
+        </LinearLayout>
 
-        </RelativeLayout>
+        <TextView
+            android:id="@+id/title_text_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="15dp"
+            android:layout_below="@id/device_layout"
+            android:textSize="16sp" />
 
-    </ScrollView>
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:layout_below="@id/title_text_view">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <ListView
+                    android:id="@+id/video_list_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true" />
+
+                <ProgressBar
+                    android:id="@+id/loader_progress_bar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/video_list_view"
+                    android:layout_centerHorizontal="true"
+                    android:visibility="gone" />
+
+            </RelativeLayout>
+
+        </ScrollView>
+
+    </RelativeLayout>
 
     <include layout="@layout/media_controller"
         android:id="@id/media_controller"
