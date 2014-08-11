@@ -1,6 +1,7 @@
 package com.mvt.derpcast;
 
 import android.content.Context;
+import android.text.TextUtils;
 
 import com.koushikdutta.async.future.FutureCallback;
 import com.koushikdutta.async.http.libcore.RawHeaders;
@@ -15,12 +16,14 @@ import java.util.List;
 
 public class MediaScraper {
 
-    private List<String> _mediaFormats;
+    private String _mediaPattern = "(https?:\\/\\/[^'^\"]+\\.(%1$s)(?:\\?.+)?)['\"]";
+    private final String _titlePattern = "<title>(.+)</title>";
+    private final String _iframePattern = "<iframe .*src=['\"](https?://.+?)['\"]";
     private List<MediaInfo> _foundMediaInfos = new ArrayList<MediaInfo>();
     private int _activeRequestCount = 0;
 
     public MediaScraper(List<String> mediaFormats) {
-        _mediaFormats = mediaFormats;
+        _mediaPattern = String.format(_mediaPattern, TextUtils.join("|", mediaFormats));
     }
 
     public void scrape(final Context context, final String pageUrl, final int iframeDepth, final MediaScraperListener listener) {
@@ -42,12 +45,12 @@ public class MediaScraper {
                         } else if (response != null) {
                             String html = response.getResult();
                             if (html != null) {
-                                String pageTitle = RegexHelper.getFirstMatch("<title>(.+)</title>", html);
+                                String pageTitle = RegexHelper.getFirstMatch(_titlePattern, html);
                                 if (pageTitle != null) {
                                     listener.pageTitleFound(pageTitle);
                                 }
 
-                                List<String> mediaUrls = RegexHelper.getMatches("(https?://[^'^\"]+\\.mp4(?:\\?.+)?)['\"]", html);
+                                List<String> mediaUrls = RegexHelper.getMatches(_mediaPattern, html);
                                 for (final String mediaUrl : mediaUrls) {
                                     synchronized (MediaScraper.this) {
                                         final MediaInfo mediaInfo = new MediaInfo(mediaUrl);
@@ -60,7 +63,7 @@ public class MediaScraper {
                                 }
 
                                 if (iframeDepth > 0 && _foundMediaInfos.size() == 0) {
-                                    List<String> iframeUrls = RegexHelper.getMatches("<iframe .*src=['\"](https?://.+?)['\"]", html);
+                                    List<String> iframeUrls = RegexHelper.getMatches(_iframePattern, html);
                                     for (String iframeUrl : iframeUrls) {
                                         scrape(context, iframeUrl, iframeDepth - 1, listener);
                                     }
@@ -86,8 +89,15 @@ public class MediaScraper {
                 @Override
                 public void onHeaders(RawHeaders rawHeaders) {
                     if (rawHeaders.getResponseCode() < 400) {
-                        mediaInfo.format = rawHeaders.get("Content-Type");
-                        mediaInfo.title = RegexHelper.getFirstMatch("([^/^=]+\\.mp4)", mediaInfo.url);
+
+                        int fileNameIndex = mediaInfo.url.lastIndexOf('/') + 1;
+                        int queryStringIndex = mediaInfo.url.lastIndexOf('?');
+                        queryStringIndex = queryStringIndex != -1 ? queryStringIndex : mediaInfo.url.length();
+                        String fileName = mediaInfo.url.substring(fileNameIndex, queryStringIndex);
+                        String extension = fileName.substring(fileName.lastIndexOf('.') + 1);
+
+                        mediaInfo.title = fileName;
+                        mediaInfo.format = extension;
 
                         try {
                             mediaInfo.size = Long.parseLong(rawHeaders.get("Content-Length"));

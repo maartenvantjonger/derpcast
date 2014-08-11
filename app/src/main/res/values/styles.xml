@@ -3,5 +3,11 @@
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="@style/OrangeHolo"></style>
-    
+
+    <style name="AppTheme.FullScreen" parent="@style/OrangeHolo">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+
 </resources>
