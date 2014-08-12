@@ -16,7 +16,7 @@ import java.util.List;
 
 public class MediaScraper {
 
-    private String _mediaPattern = "(https?:\\/\\/[^'^\"]+\\.(%1$s)(?:\\?.+)?)['\"]";
+    private String _mediaPattern = "(https?://[^'^\"]+\\.(%1$s)(?:\\?.+)?)['\"]";
     private final String _titlePattern = "<title>(.+)</title>";
     private final String _iframePattern = "<iframe .*src=['\"](https?://.+?)['\"]";
     private List<MediaInfo> _foundMediaInfos = new ArrayList<MediaInfo>();
@@ -97,7 +97,8 @@ public class MediaScraper {
                         String extension = fileName.substring(fileName.lastIndexOf('.') + 1);
 
                         mediaInfo.title = fileName;
-                        mediaInfo.format = extension;
+                        mediaInfo.extension = extension;
+                        mediaInfo.format = rawHeaders.get("Content-Type");
 
                         try {
                             mediaInfo.size = Long.parseLong(rawHeaders.get("Content-Length"));

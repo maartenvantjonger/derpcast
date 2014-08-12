@@ -4,6 +4,7 @@ public class MediaInfo implements Comparable<MediaInfo> {
     public String title;
     public String url;
     public String format;
+    public String extension;
     public long size;
 
     public MediaInfo(String url) {
