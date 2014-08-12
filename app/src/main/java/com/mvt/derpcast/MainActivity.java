@@ -257,8 +257,9 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                         @Override
                         public void run() {
                             TextView titleTextView = (TextView) findViewById(R.id.title_text_view);
-                            if (titleTextView.getText().equals("")) {
+                            if (!titleTextView.isShown()) {
                                 titleTextView.setText(Html.fromHtml(pageTitle).toString());
+                                titleTextView.setVisibility(View.VISIBLE);
                             }
                         }
                     });
@@ -272,8 +273,9 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                             findViewById(R.id.loader_progress_bar).setVisibility(View.GONE);
 
                             if (mediaFound == 0) {
-                                TextView titleTextView = (TextView) findViewById(R.id.title_text_view);
-                                titleTextView.setText(R.string.no_media);
+                                TextView errorTextView = (TextView) findViewById(R.id.error_text_view);
+                                errorTextView.setText(R.string.no_media);
+                                errorTextView.setVisibility(View.VISIBLE);
                             }
                         }
                     });
@@ -281,8 +283,9 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             });
         }
         else {
-            TextView titleTextView = (TextView) findViewById(R.id.title_text_view);
-            titleTextView.setText(R.string.usage);
+            TextView errorTextView = (TextView) findViewById(R.id.error_text_view);
+            errorTextView.setText(R.string.usage);
+            errorTextView.setVisibility(View.VISIBLE);
         }
     }
 
