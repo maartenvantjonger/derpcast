@@ -2,7 +2,17 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="@style/OrangeHolo"></style>
+    <style name="AppTheme" parent="@style/OrangeHolo">
+        <item name="android:actionBarItemBackground">@drawable/selectable_background_orangeactionbar</item>
+        <item name="android:popupMenuStyle">@style/PopupMenu.Orangeactionbar</item>
+        <item name="android:dropDownListViewStyle">@style/DropDownListView.Orangeactionbar</item>
+        <item name="android:actionBarTabStyle">@style/ActionBarTabStyle.Orangeactionbar</item>
+        <item name="android:actionDropDownStyle">@style/DropDownNav.Orangeactionbar</item>
+        <item name="android:actionBarStyle">@style/ActionBar.Transparent.Orangeactionbar</item>
+        <item name="android:actionModeBackground">@drawable/cab_background_top_orangeactionbar</item>
+        <item name="android:actionModeSplitBackground">@drawable/cab_background_bottom_orangeactionbar</item>
+        <item name="android:actionModeCloseButtonStyle">@style/ActionButton.CloseMode.Orangeactionbar</item>
+    </style>
 
     <style name="AppTheme.FullScreen" parent="@style/OrangeHolo">
         <item name="android:windowFullscreen">true</item>

@@ -4,11 +4,9 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
 
   <style name="OrangeHolo" parent="@style/_OrangeHolo">
-
     <item name="android:textSelectHandleLeft">@drawable/orangeholo_text_select_handle_left</item>
     <item name="android:textSelectHandleRight">@drawable/orangeholo_text_select_handle_right</item>
     <item name="android:textSelectHandle">@drawable/orangeholo_text_select_handle_middle</item>
-
   </style>
 
 </resources>

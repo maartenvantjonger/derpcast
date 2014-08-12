@@ -13,6 +13,7 @@ import com.mvt.derpcast.helpers.RegexHelper;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class MediaScraper {
 
@@ -20,10 +21,12 @@ public class MediaScraper {
     private final String _titlePattern = "<title>(.+)</title>";
     private final String _iframePattern = "<iframe .*src=['\"](https?://.+?)['\"]";
     private List<MediaInfo> _foundMediaInfos = new ArrayList<MediaInfo>();
+    private Map<String, String> _mediaFormats;
     private int _activeRequestCount = 0;
 
-    public MediaScraper(List<String> mediaFormats) {
-        _mediaPattern = String.format(_mediaPattern, TextUtils.join("|", mediaFormats));
+    public MediaScraper(Map<String, String> mediaFormats) {
+        _mediaFormats = mediaFormats;
+        _mediaPattern = String.format(_mediaPattern, TextUtils.join("|", mediaFormats.keySet()));
     }
 
     public void scrape(final Context context, final String pageUrl, final int iframeDepth, final MediaScraperListener listener) {
@@ -94,11 +97,11 @@ public class MediaScraper {
                         int queryStringIndex = mediaInfo.url.lastIndexOf('?');
                         queryStringIndex = queryStringIndex != -1 ? queryStringIndex : mediaInfo.url.length();
                         String fileName = mediaInfo.url.substring(fileNameIndex, queryStringIndex);
-                        String extension = fileName.substring(fileName.lastIndexOf('.') + 1);
+                        String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
 
                         mediaInfo.title = fileName;
                         mediaInfo.extension = extension;
-                        mediaInfo.format = rawHeaders.get("Content-Type");
+                        mediaInfo.format = _mediaFormats.get(extension);
 
                         try {
                             mediaInfo.size = Long.parseLong(rawHeaders.get("Content-Length"));

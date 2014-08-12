@@ -12,6 +12,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ExpandableListView;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.SeekBar;
@@ -28,8 +29,9 @@ import com.connectsdk.service.capability.VolumeControl;
 import com.connectsdk.service.capability.listeners.ResponseListener;
 import com.connectsdk.service.command.ServiceCommandError;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -209,24 +211,26 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
         _mediaAdapter = new MediaAdapter();
 
-        ListView mediaListView = (ListView)findViewById(R.id.media_list_view);
+        ExpandableListView mediaListView = (ExpandableListView)findViewById(R.id.media_list_view);
         mediaListView.setAdapter(_mediaAdapter);
-        mediaListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mediaListView.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+            public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id) {
 
                 findViewById(R.id.seek_bar_layout).setVisibility(View.GONE);
 
-                if (_mediaAdapter.getMediaInfo(i).equals(_mediaAdapter.getPlayingMedia())) {
+                MediaInfo mediaInfo = _mediaAdapter.getMediaInfo(groupPosition, childPosition);
+                if (mediaInfo.equals(_mediaAdapter.getPlayingMedia())) {
                     if (_device != null) {
                         _device.getMediaControl().stop(null);
                         _playState = MediaControl.PlayStateStatus.Paused;
                     }
-                }
-                else {
-                    _mediaAdapter.setPlayingMediaInfo(i);
+                } else {
+                    _mediaAdapter.setPlayingMediaInfo(mediaInfo);
                     playQueuedMedia();
                 }
+
+                return false;
             }
         });
 
@@ -242,18 +246,19 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             findViewById(R.id.loader_progress_bar).setVisibility(View.VISIBLE);
             preferences.edit().putString("pageUrl", pageUrl).commit();
 
-            List<String> mediaFormats = new ArrayList<String>();
-            mediaFormats.add("ogg");
-            mediaFormats.add("ogv");
-            mediaFormats.add("mp3");
-            mediaFormats.add("mp4");
-            mediaFormats.add("m4v");
-            mediaFormats.add("mpg");
-            mediaFormats.add("mpeg");
-            mediaFormats.add("webm");
-            mediaFormats.add("3gp");
-            mediaFormats.add("avi");
-            mediaFormats.add("mov");
+            Map<String, String> mediaFormats = new HashMap<String, String>();
+            mediaFormats.put("ogg", "audio/ogg");
+            mediaFormats.put("ogv", "video/ogg");
+            mediaFormats.put("mp3", "audio/mpeg");
+            mediaFormats.put("mp4", "video/mp4");
+            mediaFormats.put("m4v", "video/x-m4v");
+            mediaFormats.put("mpg", "video/mpeg");
+            mediaFormats.put("mpeg", "video/mpeg");
+            mediaFormats.put("webm", "video/webm");
+            mediaFormats.put("3gp", "video/3gpp");
+            mediaFormats.put("3g2", "video/3gpp2");
+            mediaFormats.put("avi", "video/x-msvideo");
+            mediaFormats.put("mov", "video/quicktime");
 
             MediaScraper mediaScraper = new MediaScraper(mediaFormats);
             mediaScraper.scrape(MainActivity.this, pageUrl, 2, new MediaScraperListener() {
@@ -531,10 +536,10 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 if (!(device instanceof LocalDevice)) {
                     _connectItem.setIcon(R.drawable.ic_media_route_on_holo_light);
                     _connectItem.setTitle(device.getModelName());
+                    initializeMediaController();
                 }
 
                 _deviceAdapter.notifyDataSetChanged();
-                initializeMediaController();
                 playQueuedMedia();
             }
         });
