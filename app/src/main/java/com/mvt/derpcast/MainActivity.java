@@ -214,8 +214,19 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         mediaListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                _mediaAdapter.setPlayingMediaInfo(i);
-                playQueuedMedia();
+
+                findViewById(R.id.seek_bar_layout).setVisibility(View.GONE);
+
+                if (_mediaAdapter.getMediaInfo(i).equals(_mediaAdapter.getPlayingMedia())) {
+                    if (_device != null) {
+                        _device.getMediaControl().stop(null);
+                        _playState = MediaControl.PlayStateStatus.Paused;
+                    }
+                }
+                else {
+                    _mediaAdapter.setPlayingMediaInfo(i);
+                    playQueuedMedia();
+                }
             }
         });
 
