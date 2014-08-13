@@ -370,7 +370,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 final MediaControl mediaControl = _device.getMediaControl();
                 final MediaPlayer mediaPlayer = _device.getMediaPlayer();
                 if (mediaPlayer != null) {
-                    mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, mediaInfo.title, null, null, false, new MediaPlayer.LaunchListener() {
+                    mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, mediaInfo.title, "", "", false, new MediaPlayer.LaunchListener() {
                         public void onSuccess(MediaPlayer.MediaLaunchObject object) {
                             //findViewById(R.id.play_button).setVisibility(View.VISIBLE);
                             //findViewById(R.id.play_progess_bar).setVisibility(View.GONE);
