@@ -4,7 +4,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
-import android.widget.ExpandableListView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -65,9 +64,6 @@ public class MediaAdapter extends BaseExpandableListAdapter {
         if (convertView == null) {
             LayoutInflater inflater = LayoutInflater.from(parent.getContext());
             convertView = inflater.inflate(R.layout.media_list_group_item, parent, false);
-
-            ExpandableListView listView = (ExpandableListView) parent;
-            listView.expandGroup(groupPosition);
         }
 
         TextView groupTextView = (TextView)convertView.findViewById(R.id.group_text_view);

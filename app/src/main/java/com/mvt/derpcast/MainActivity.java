@@ -211,7 +211,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
         _mediaAdapter = new MediaAdapter();
 
-        ExpandableListView mediaListView = (ExpandableListView)findViewById(R.id.media_list_view);
+        final ExpandableListView mediaListView = (ExpandableListView)findViewById(R.id.media_list_view);
         mediaListView.setAdapter(_mediaAdapter);
         mediaListView.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
             @Override
@@ -285,6 +285,12 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                                 TextView errorTextView = (TextView) findViewById(R.id.error_text_view);
                                 errorTextView.setText(R.string.no_media);
                                 errorTextView.setVisibility(View.VISIBLE);
+                            }
+                            else {
+                                int groupCount = _mediaAdapter.getGroupCount();
+                                for (int i = 0; i < groupCount; i++) {
+                                    mediaListView.expandGroup(i);
+                                }
                             }
                         }
                     });
@@ -363,7 +369,8 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 final MediaControl mediaControl = _device.getMediaControl();
                 final MediaPlayer mediaPlayer = _device.getMediaPlayer();
                 if (mediaPlayer != null) {
-                    mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, mediaInfo.title, "", "", false, new MediaPlayer.LaunchListener() {
+                    String pageTitle = ((TextView)findViewById(R.id.title_text_view)).getText().toString();
+                    mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, mediaInfo.title, pageTitle, "", false, new MediaPlayer.LaunchListener() {
                         public void onSuccess(MediaPlayer.MediaLaunchObject object) {
                             //findViewById(R.id.play_button).setVisibility(View.VISIBLE);
                             //findViewById(R.id.play_progess_bar).setVisibility(View.GONE);
