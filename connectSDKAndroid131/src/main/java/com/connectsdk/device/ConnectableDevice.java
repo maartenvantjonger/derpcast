@@ -347,7 +347,7 @@ public class ConnectableDevice implements DeviceServiceListener {
 			}
 		}
 		
-		return connectedCount >= services.size();
+		return connectedCount > 0;
 	}
 	// @endcond
 	
