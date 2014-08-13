@@ -9,22 +9,17 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MediaAdapter extends BaseExpandableListAdapter {
 
-    private List<String> _mediaTypes;
-    private List<List<MediaInfo>> _mediaInfos;
+    private Map<String, List<MediaInfo>> _mediaInfos;
     private MediaInfo _playingMediaInfo;
 
     public MediaAdapter() {
-        _mediaTypes = new ArrayList<String>();
-        _mediaTypes.add("video");
-        _mediaTypes.add("audio");
-
-        _mediaInfos = new ArrayList<List<MediaInfo>>();
-        _mediaInfos.add(new ArrayList<MediaInfo>());
-        _mediaInfos.add(new ArrayList<MediaInfo>());
+        _mediaInfos = new HashMap<String, List<MediaInfo>>();
     }
 
     @Override
@@ -34,17 +29,20 @@ public class MediaAdapter extends BaseExpandableListAdapter {
 
     @Override
     public int getChildrenCount(int groupPosition) {
-        return _mediaInfos.get(groupPosition).size();
+        Object group = getGroup(groupPosition);
+        return _mediaInfos.get(group).size();
     }
 
     @Override
     public Object getGroup(int groupPosition) {
-        return _mediaTypes.get(groupPosition);
+        Object[] groups = _mediaInfos.keySet().toArray();
+        return (String)groups[groupPosition];
     }
 
     @Override
     public Object getChild(int groupPosition, int childPosition) {
-        return _mediaInfos.get(groupPosition).get(childPosition);
+        Object group = getGroup(groupPosition);
+        return _mediaInfos.get(group).get(childPosition);
     }
 
     @Override
@@ -73,7 +71,7 @@ public class MediaAdapter extends BaseExpandableListAdapter {
         }
 
         TextView groupTextView = (TextView)convertView.findViewById(R.id.group_text_view);
-        groupTextView.setText(getGroup(groupPosition).toString());
+        groupTextView.setText((String)getGroup(groupPosition));
 
         return convertView;
     }
@@ -109,7 +107,11 @@ public class MediaAdapter extends BaseExpandableListAdapter {
     public synchronized void addMediaInfo(MediaInfo mediaInfo) {
 
         String mediaType = mediaInfo.format.substring(0, mediaInfo.format.indexOf('/'));
-        List<MediaInfo> group = _mediaInfos.get(_mediaTypes.indexOf(mediaType));
+        if (!_mediaInfos.containsKey(mediaType)) {
+            _mediaInfos.put(mediaType, new ArrayList<MediaInfo>());
+        }
+
+        List<MediaInfo> group = _mediaInfos.get(mediaType);
         if (!group.contains(mediaInfo)) {
             group.add(mediaInfo);
             Collections.sort(group);
