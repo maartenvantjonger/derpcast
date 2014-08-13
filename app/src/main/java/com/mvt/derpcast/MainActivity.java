@@ -247,18 +247,11 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             preferences.edit().putString("pageUrl", pageUrl).commit();
 
             Map<String, String> mediaFormats = new HashMap<String, String>();
+            mediaFormats.put("aac", "audio/aac");
             mediaFormats.put("ogg", "audio/ogg");
-            mediaFormats.put("ogv", "video/ogg");
             mediaFormats.put("mp3", "audio/mpeg");
             mediaFormats.put("mp4", "video/mp4");
-            mediaFormats.put("m4v", "video/x-m4v");
-            mediaFormats.put("mpg", "video/mpeg");
-            mediaFormats.put("mpeg", "video/mpeg");
             mediaFormats.put("webm", "video/webm");
-            mediaFormats.put("3gp", "video/3gpp");
-            mediaFormats.put("3g2", "video/3gpp2");
-            mediaFormats.put("avi", "video/x-msvideo");
-            mediaFormats.put("mov", "video/quicktime");
 
             MediaScraper mediaScraper = new MediaScraper(mediaFormats);
             mediaScraper.scrape(MainActivity.this, pageUrl, 2, new MediaScraperListener() {
