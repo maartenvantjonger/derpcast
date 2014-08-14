@@ -110,7 +110,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 if (_device != null) {
                     _device.getMediaControl().stop(null);
                     _playState = MediaControl.PlayStateStatus.Paused;
-                    findViewById(R.id.seek_bar_layout).setVisibility(View.GONE);
+                    findViewById(R.id.media_controller).setVisibility(View.GONE);
                 }
 
                 return true;
@@ -140,8 +140,11 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if (_device != null && seekBar.isShown() &&
+                if (_device != null &&
+                    _device.hasCapability(MediaControl.Seek) &&
+                    seekBar.isShown() &&
                     _playState == MediaControl.PlayStateStatus.Playing) {
+
                     _device.getMediaControl().getPosition(new MediaControl.PositionListener() {
                         @Override
                         public void onSuccess(Long position) {
@@ -324,6 +327,12 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        DiscoveryManager.getInstance().start();
+    }
+
+    @Override
     protected void onDestroy() {
         DiscoveryManager.destroy();
         super.onDestroy();
@@ -382,13 +391,12 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
                                     if (_playState == MediaControl.PlayStateStatus.Finished) {
                                         findViewById(R.id.media_controller).setVisibility(View.GONE);
+                                        _mediaAdapter.setPlayingMediaInfo(null);
                                     }
                                 }
 
                                 @Override
-                                public void onError(ServiceCommandError error) {
-                                    _playState = MediaControl.PlayStateStatus.Playing;
-                                }
+                                public void onError(ServiceCommandError error) { }
                             });
 
                             initializeMediaController();
@@ -470,6 +478,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             _device.disconnect();
             _device = null;
             _playState = null;
+            _mediaAdapter.setPlayingMediaInfo(null);
 
             runOnUiThread(new Runnable() {
                 @Override
@@ -536,7 +545,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 if (!(device instanceof LocalDevice)) {
                     _connectItem.setIcon(R.drawable.ic_media_route_on_holo_light);
                     _connectItem.setTitle(device.getModelName());
-                    initializeMediaController();
                 }
 
                 _deviceAdapter.notifyDataSetChanged();
