@@ -51,9 +51,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
         setContentView(R.layout.activity_main);
 
-        final View mediaController = findViewById(R.id.media_controller);
-        mediaController.setVisibility(View.GONE);
-
         //final ProgressBar playProgressBar = (ProgressBar)findViewById(R.id.play_progess_bar);
         final ImageButton playButton = (ImageButton)findViewById(R.id.play_button);
         playButton.setOnClickListener(new View.OnClickListener() {
@@ -109,8 +106,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             public boolean onLongClick(View view) {
                 if (_device != null) {
                     _device.getMediaControl().stop(null);
-                    _playState = MediaControl.PlayStateStatus.Paused;
-                    findViewById(R.id.media_controller).setVisibility(View.GONE);
+                    stopPlaying();
                 }
 
                 return true;
@@ -388,10 +384,13 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                                 @Override
                                 public void onSuccess(MediaControl.PlayStateStatus playState) {
                                     _playState = playState;
-
                                     if (_playState == MediaControl.PlayStateStatus.Finished) {
-                                        findViewById(R.id.media_controller).setVisibility(View.GONE);
-                                        _mediaAdapter.setPlayingMediaInfo(null);
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                stopPlaying();
+                                            }
+                                        });
                                     }
                                 }
 
@@ -409,6 +408,13 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 }
             }
         }
+    }
+
+    private void stopPlaying() {
+        findViewById(R.id.media_controller).setVisibility(View.GONE);
+        _mediaAdapter.setPlayingMediaInfo(null);
+        _playState = MediaControl.PlayStateStatus.Idle;
+        findViewById(R.id.media_controller).setVisibility(View.GONE);
     }
 
     private void initializeMediaController() {
@@ -477,16 +483,15 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             _device.removeListener(MainActivity.this);
             _device.disconnect();
             _device = null;
-            _playState = null;
-            _mediaAdapter.setPlayingMediaInfo(null);
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+                    stopPlaying();
+
                     _connectItem.setIcon(R.drawable.ic_media_route_off_holo_light);
                     _connectItem.setTitle(R.string.cast);
                     _deviceAdapter.notifyDataSetChanged();
-                    findViewById(R.id.media_controller).setVisibility(View.GONE);
                 }
             });
         }
