@@ -3,6 +3,7 @@
     android:id="@+id/main_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:clickable="true"
     tools:context=".MainActivity">
 
     <RelativeLayout
@@ -18,7 +19,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:orientation="vertical"
-            android:background="#FF6A00"
+            android:background="@color/orangeholo_color"
             android:visibility="gone">
 
             <ListView
@@ -65,6 +66,7 @@
                     android:id="@+id/loader_progress_bar"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
                     android:layout_below="@id/media_list_view"
                     android:layout_centerHorizontal="true"
                     android:visibility="gone" />

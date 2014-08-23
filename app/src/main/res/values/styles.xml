@@ -14,6 +14,10 @@
         <item name="android:actionModeCloseButtonStyle">@style/ActionButton.CloseMode.Orangeactionbar</item>
     </style>
 
+    <style name="AppTheme.NoActionBar" parent="@style/OrangeHolo">
+        <item name="android:windowNoTitle">true</item>
+    </style>
+
     <style name="AppTheme.FullScreen" parent="@style/OrangeHolo">
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
