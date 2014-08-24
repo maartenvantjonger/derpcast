@@ -16,15 +16,14 @@
             android:id="@+id/play_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@android:drawable/ic_media_pause" />
+            android:layout_marginRight="4dp"
+            android:background="@android:drawable/ic_media_play" />
 
-        <ProgressBar
-            android:id="@+id/play_progess_bar"
+        <ImageButton
+            android:id="@+id/pause_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/media_list_view"
-            android:layout_centerHorizontal="true"
-            android:visibility="gone"/>
+            android:background="@android:drawable/ic_media_pause" />
 
     </LinearLayout>
 

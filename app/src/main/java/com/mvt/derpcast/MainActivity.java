@@ -40,10 +40,9 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     private ConnectableDevice _device;
     private AlertDialog _pairingDialog;
     private MenuItem _connectItem;
-    private long _mediaDuration;
-    private MediaControl.PlayStateStatus _playState;
     private DeviceAdapter _deviceAdapter;
     private MediaAdapter _mediaAdapter;
+    private long _mediaDuration;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,39 +50,21 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
         setContentView(R.layout.activity_main);
 
-        final ImageButton playButton = (ImageButton)findViewById(R.id.play_button);
+        ImageButton playButton = (ImageButton)findViewById(R.id.play_button);
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (_device != null) {
-                    if (_playState == MediaControl.PlayStateStatus.Paused || _playState == MediaControl.PlayStateStatus.Idle) {
+                    _device.getMediaControl().play(new ResponseListener<Object>() {
+                        @Override
+                        public void onSuccess(Object object) {
+                        }
 
-                        _device.getMediaControl().play(new ResponseListener<Object>() {
-                            @Override
-                            public void onSuccess(Object object) {
-                                _playState = MediaControl.PlayStateStatus.Playing;
-                            }
-
-                            @Override
-                            public void onError(ServiceCommandError error) {
-                                error.printStackTrace();
-                            }
-                        });
-                    }
-                    else if (_playState == MediaControl.PlayStateStatus.Playing){
-
-                        _device.getMediaControl().pause(new ResponseListener<Object>() {
-                            @Override
-                            public void onSuccess(Object object) {
-                                _playState = MediaControl.PlayStateStatus.Paused;
-                            }
-
-                            @Override
-                            public void onError(ServiceCommandError error) {
-                                error.printStackTrace();
-                            }
-                        });
-                    }
+                        @Override
+                        public void onError(ServiceCommandError error) {
+                            error.printStackTrace();
+                        }
+                    });
                 }
             }
         });
@@ -97,6 +78,24 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 }
 
                 return true;
+            }
+        });
+
+        ImageButton pauseButton = (ImageButton)findViewById(R.id.pause_button);
+        pauseButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (_device != null) {
+                    _device.getMediaControl().pause(new ResponseListener<Object>() {
+                        @Override
+                        public void onSuccess(Object object) {}
+
+                        @Override
+                        public void onError(ServiceCommandError error) {
+                            error.printStackTrace();
+                        }
+                    });
+                }
             }
         });
 
@@ -177,11 +176,13 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
                 disconnectDevice();
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(MainActivity.this).edit();
-                editor.remove("lastDevice").commit();
 
-                if (!sameDeviceClicked) {
+                if (sameDeviceClicked) {
+                    editor.remove("lastDevice").apply();
+                }
+                else {
                     connectDevice(device);
-                    editor.putString("lastDevice", _device.getId()).commit();
+                    editor.putString("lastDevice", _device.getId()).apply();
                 }
 
                 toggleDeviceMenu(false);
@@ -209,7 +210,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 if (mediaInfo.equals(_mediaAdapter.getPlayingMedia())) {
                     if (_device != null) {
                         _device.getMediaControl().stop(null);
-                        _playState = MediaControl.PlayStateStatus.Idle;
+                        stopPlaying();
                     }
                 } else {
                     _mediaAdapter.setPlayingMediaInfo(mediaInfo);
@@ -230,7 +231,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
         if (pageUrl != null) {
             findViewById(R.id.loader_progress_bar).setVisibility(View.VISIBLE);
-            preferences.edit().putString("pageUrl", pageUrl).commit();
+            preferences.edit().putString("pageUrl", pageUrl).apply();
 
             Map<String, String> mediaFormats = new HashMap<String, String>();
             mediaFormats.put("aac", "audio/aac");
@@ -347,6 +348,34 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
                 final MediaPlayer mediaPlayer = _device.getMediaPlayer();
                 if (mediaPlayer != null) {
+
+                    if (_device.hasCapability(MediaControl.PlayState_Subscribe)) {
+                        MediaControl mediaControl = _device.getMediaControl();
+                        mediaControl.subscribePlayState(new MediaControl.PlayStateListener() {
+                            @Override
+                            public void onSuccess(final MediaControl.PlayStateStatus playState) {
+
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (playState == MediaControl.PlayStateStatus.Finished ||
+                                            playState == MediaControl.PlayStateStatus.Idle) {
+                                            stopPlaying();
+                                        }
+                                        else if (!findViewById(R.id.media_controller).isShown()) {
+                                            initializeMediaController();
+                                        }
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onError(ServiceCommandError error) {
+                                error.printStackTrace();
+                            }
+                        });
+                    }
+
                     String pageTitle = ((TextView)findViewById(R.id.title_text_view)).getText().toString();
                     mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, mediaInfo.title, pageTitle, "", false, new MediaPlayer.LaunchListener() {
                         @Override
@@ -366,7 +395,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
     private void stopPlaying() {
         _mediaAdapter.setPlayingMediaInfo(null);
-        _playState = MediaControl.PlayStateStatus.Idle;
         findViewById(R.id.media_controller).setVisibility(View.GONE);
     }
 
@@ -376,7 +404,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             findViewById(R.id.media_controller).setVisibility(View.VISIBLE);
 
             if (_device.hasCapability(MediaControl.Seek) &&
-                    _device.hasCapability(MediaControl.Duration)) {
+                _device.hasCapability(MediaControl.Duration)) {
 
                 MediaControl mediaControl = _device.getMediaControl();
                 mediaControl.getDuration(new MediaControl.DurationListener() {
@@ -494,33 +522,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     public void onDeviceReady(final ConnectableDevice device) {
         if (_pairingDialog.isShowing() ) {
             _pairingDialog.dismiss();
-        }
-
-        if (device.hasCapability(MediaControl.PlayState_Subscribe)) {
-            MediaControl mediaControl = device.getMediaControl();
-            mediaControl.subscribePlayState(new MediaControl.PlayStateListener() {
-                @Override
-                public void onSuccess(MediaControl.PlayStateStatus playState) {
-                    _playState = playState;
-
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (_playState == MediaControl.PlayStateStatus.Finished ||
-                                    _playState == MediaControl.PlayStateStatus.Idle) {
-                                stopPlaying();
-                            } else if (!findViewById(R.id.media_controller).isShown()) {
-                                initializeMediaController();
-                            }
-                        }
-                    });
-                }
-
-                @Override
-                public void onError(ServiceCommandError error) {
-                    error.printStackTrace();
-                }
-            });
         }
 
         runOnUiThread(new Runnable() {
