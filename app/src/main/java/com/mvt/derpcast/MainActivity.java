@@ -51,51 +51,36 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
         setContentView(R.layout.activity_main);
 
-        //final ProgressBar playProgressBar = (ProgressBar)findViewById(R.id.play_progess_bar);
         final ImageButton playButton = (ImageButton)findViewById(R.id.play_button);
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (_device != null) {
                     if (_playState == MediaControl.PlayStateStatus.Paused || _playState == MediaControl.PlayStateStatus.Idle) {
-                        //playButton.setVisibility(View.GONE);
-                        //playProgressBar.setVisibility(View.VISIBLE);
 
                         _device.getMediaControl().play(new ResponseListener<Object>() {
                             @Override
                             public void onSuccess(Object object) {
-                                //playProgressBar.setVisibility(View.GONE);
-                                //playButton.setVisibility(View.VISIBLE);
-                                //playButton.setBackgroundResource(android.R.drawable.ic_media_pause);
                                 _playState = MediaControl.PlayStateStatus.Playing;
                             }
 
                             @Override
                             public void onError(ServiceCommandError error) {
                                 error.printStackTrace();
-                                //playProgressBar.setVisibility(View.GONE);
-                                //playButton.setVisibility(View.VISIBLE);
                             }
                         });
                     }
                     else if (_playState == MediaControl.PlayStateStatus.Playing){
-                        //playButton.setVisibility(View.GONE);
-                        //playProgressBar.setVisibility(View.VISIBLE);
 
                         _device.getMediaControl().pause(new ResponseListener<Object>() {
                             @Override
                             public void onSuccess(Object object) {
-                                //playProgressBar.setVisibility(View.GONE);
-                                //playButton.setVisibility(View.VISIBLE);
-                                //playButton.setBackgroundResource(android.R.drawable.ic_media_play);
                                 _playState = MediaControl.PlayStateStatus.Paused;
                             }
 
                             @Override
                             public void onError(ServiceCommandError error) {
                                 error.printStackTrace();
-                                //playProgressBar.setVisibility(View.GONE);
-                                //playButton.setVisibility(View.VISIBLE);
                             }
                         });
                     }
@@ -224,7 +209,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 if (mediaInfo.equals(_mediaAdapter.getPlayingMedia())) {
                     if (_device != null) {
                         _device.getMediaControl().stop(null);
-                        _playState = MediaControl.PlayStateStatus.Paused;
+                        _playState = MediaControl.PlayStateStatus.Idle;
                     }
                 } else {
                     _mediaAdapter.setPlayingMediaInfo(mediaInfo);
@@ -319,18 +304,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        DiscoveryManager.getInstance().stop();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        DiscoveryManager.getInstance().start();
-    }
-
-    @Override
     protected void onDestroy() {
         DiscoveryManager.destroy();
         super.onDestroy();
@@ -371,17 +344,13 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 _mediaAdapter.setPlayingMediaInfo(null);
             }
             else {
-                //findViewById(R.id.play_button).setVisibility(View.GONE);
-                //findViewById(R.id.play_progess_bar).setVisibility(View.VISIBLE);
 
                 final MediaPlayer mediaPlayer = _device.getMediaPlayer();
                 if (mediaPlayer != null) {
                     String pageTitle = ((TextView)findViewById(R.id.title_text_view)).getText().toString();
                     mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, mediaInfo.title, pageTitle, "", false, new MediaPlayer.LaunchListener() {
+                        @Override
                         public void onSuccess(MediaPlayer.MediaLaunchObject object) {
-                            //findViewById(R.id.play_button).setVisibility(View.VISIBLE);
-                            //findViewById(R.id.play_progess_bar).setVisibility(View.GONE);
-
                             initializeMediaController();
                         }
 
