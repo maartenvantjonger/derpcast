@@ -11,15 +11,17 @@ import com.koushikdutta.ion.Response;
 import com.mvt.derpcast.helpers.RegexHelper;
 
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class MediaScraper {
 
-    private String _mediaPattern = "(https?://[^'^\"]+\\.(%1$s)(?:\\?.+)?)['\"]";
+    private String _mediaPattern = "([^'^\"]+\\.(%1$s)(?:\\?.+)?)['\"]";
     private final String _titlePattern = "<title>(.+)</title>";
-    private final String _iframePattern = "<iframe .*src=['\"](https?://.+?)['\"]";
+    private final String _iframePattern = "<iframe .*src=['\"](.+?)['\"]";
     private List<MediaInfo> _foundMediaInfos = new ArrayList<MediaInfo>();
     private Map<String, String> _mediaFormats;
     private int _activeRequestCount = 0;
@@ -56,7 +58,7 @@ public class MediaScraper {
                                 List<String> mediaUrls = RegexHelper.getMatches(_mediaPattern, html);
                                 for (final String mediaUrl : mediaUrls) {
                                     synchronized (MediaScraper.this) {
-                                        final MediaInfo mediaInfo = new MediaInfo(mediaUrl);
+                                        final MediaInfo mediaInfo = new MediaInfo(getAbsoluteUrl(pageUrl, mediaUrl));
 
                                         if (!_foundMediaInfos.contains(mediaInfo)) {
                                             _foundMediaInfos.add(mediaInfo);
@@ -68,7 +70,7 @@ public class MediaScraper {
                                 if (iframeDepth > 0 && _foundMediaInfos.size() == 0) {
                                     List<String> iframeUrls = RegexHelper.getMatches(_iframePattern, html);
                                     for (String iframeUrl : iframeUrls) {
-                                        scrape(context, iframeUrl, iframeDepth - 1, listener);
+                                        scrape(context, getAbsoluteUrl(pageUrl, iframeUrl), iframeDepth - 1, listener);
                                     }
                                 }
                             }
@@ -122,5 +124,26 @@ public class MediaScraper {
                     }
                 }
             });
+    }
+
+    private String getAbsoluteUrl(String pageUrl, String url) {
+        String absoluteUrl = url;
+
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            try {
+                URL baseUrl = new URL(pageUrl);
+                if (url.startsWith("/")) {
+                    url = baseUrl.getProtocol() +
+                        "://" + baseUrl.getAuthority() + url;
+                }
+                else {
+                    url = baseUrl.getProtocol() +
+                        "://" + baseUrl.getAuthority() + baseUrl.getPath() + url;
+                }
+            }
+            catch (MalformedURLException e) {}
+        }
+
+        return absoluteUrl;
     }
 }
