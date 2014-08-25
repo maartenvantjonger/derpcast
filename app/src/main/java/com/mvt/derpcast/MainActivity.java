@@ -1,6 +1,5 @@
 package com.mvt.derpcast;
 
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -38,11 +37,11 @@ import java.util.TimerTask;
 public class MainActivity extends ActionBarActivity implements ConnectableDeviceListener {
 
     private ConnectableDevice _device;
-    private AlertDialog _pairingDialog;
     private MenuItem _connectItem;
     private DeviceAdapter _deviceAdapter;
     private MediaAdapter _mediaAdapter;
     private long _mediaDuration;
+    private boolean _playRequested;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,18 +68,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             }
         });
 
-        playButton.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View view) {
-                if (_device != null) {
-                    _device.getMediaControl().stop(null);
-                    stopPlaying();
-                }
-
-                return true;
-            }
-        });
-
         ImageButton pauseButton = (ImageButton)findViewById(R.id.pause_button);
         pauseButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -98,6 +85,22 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 }
             }
         });
+
+
+        View.OnLongClickListener longClickListener = new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                if (_device != null) {
+                    _device.getMediaControl().stop(null);
+                    stopPlaying();
+                }
+
+                return true;
+            }
+        };
+
+        playButton.setOnLongClickListener(longClickListener);
+        pauseButton.setOnLongClickListener(longClickListener);
 
         final TextView currentTime = (TextView)findViewById(R.id.time_current);
         final SeekBar seekBar = (SeekBar)findViewById(R.id.seek_bar);
@@ -122,10 +125,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if (_device != null &&
-                    _device.hasCapability(MediaControl.Seek) &&
-                    seekBar.isShown()) {
-
+                if (_device != null && seekBar.isShown()) {
                     _device.getMediaControl().getPosition(new MediaControl.PositionListener() {
                         @Override
                         public void onSuccess(Long position) {
@@ -149,19 +149,14 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         _deviceAdapter.setDeviceAddedListener(new DeviceAdapter.DeviceAddedListener() {
             @Override
             public void onDeviceAdded(final ConnectableDevice device) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (_device == null) {
-                            String lastDevice = PreferenceManager
-                                    .getDefaultSharedPreferences(MainActivity.this)
-                                    .getString("lastDevice", null);
-                            if (device.getId().equals(lastDevice)) {
-                                connectDevice(device);
-                            }
-                        }
+                if (_device == null) {
+                    String lastDevice = PreferenceManager
+                            .getDefaultSharedPreferences(MainActivity.this)
+                            .getString("lastDevice", null);
+                    if (device.getId().equals(lastDevice)) {
+                        connectDevice(device);
                     }
-                });
+                }
             }
         });
 
@@ -188,13 +183,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 toggleDeviceMenu(false);
             }
         });
-
-        _pairingDialog = new AlertDialog.Builder(this)
-            .setTitle("Pairing with TV")
-            .setMessage("Please confirm the connection on your TV")
-            .setPositiveButton("OK", null)
-            .setNegativeButton("Cancel", null)
-            .create();
 
         _mediaAdapter = new MediaAdapter();
 
@@ -335,7 +323,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             return;
         }
 
-        MediaInfo mediaInfo = _mediaAdapter.getPlayingMedia();
+        final MediaInfo mediaInfo = _mediaAdapter.getPlayingMedia();
         if (mediaInfo != null) {
             if (_device instanceof LocalDevice) {
                 Intent intent = new Intent(MainActivity.this, MediaPlayerActivity.class);
@@ -345,46 +333,20 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 _mediaAdapter.setPlayingMediaInfo(null);
             }
             else {
-
-                final MediaPlayer mediaPlayer = _device.getMediaPlayer();
+                MediaPlayer mediaPlayer = _device.getMediaPlayer();
                 if (mediaPlayer != null) {
-
-                    if (_device.hasCapability(MediaControl.PlayState_Subscribe)) {
-                        MediaControl mediaControl = _device.getMediaControl();
-                        mediaControl.subscribePlayState(new MediaControl.PlayStateListener() {
-                            @Override
-                            public void onSuccess(final MediaControl.PlayStateStatus playState) {
-
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (playState == MediaControl.PlayStateStatus.Finished ||
-                                            playState == MediaControl.PlayStateStatus.Idle) {
-                                            stopPlaying();
-                                        }
-                                        else if (!findViewById(R.id.media_controller).isShown()) {
-                                            initializeMediaController();
-                                        }
-                                    }
-                                });
-                            }
-
-                            @Override
-                            public void onError(ServiceCommandError error) {
-                                error.printStackTrace();
-                            }
-                        });
-                    }
-
+                    _playRequested = true;
                     String pageTitle = ((TextView)findViewById(R.id.title_text_view)).getText().toString();
                     mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, mediaInfo.title, pageTitle, "", false, new MediaPlayer.LaunchListener() {
                         @Override
                         public void onSuccess(MediaPlayer.MediaLaunchObject object) {
+                            _playRequested = false;
                             initializeMediaController();
                         }
 
                         @Override
                         public void onError(ServiceCommandError error) {
+                            _playRequested = false;
                             error.printStackTrace();
                         }
                     });
@@ -394,7 +356,10 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     }
 
     private void stopPlaying() {
-        _mediaAdapter.setPlayingMediaInfo(null);
+        if (!_playRequested) {
+            _mediaAdapter.setPlayingMediaInfo(null);
+        }
+
         findViewById(R.id.media_controller).setVisibility(View.GONE);
     }
 
@@ -464,16 +429,11 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             _device.disconnect();
             _device = null;
 
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    stopPlaying();
+            stopPlaying();
 
-                    _connectItem.setIcon(R.drawable.ic_media_route_off_holo_light);
-                    _connectItem.setTitle(R.string.cast);
-                    _deviceAdapter.notifyDataSetChanged();
-                }
-            });
+            _connectItem.setIcon(R.drawable.ic_media_route_off_holo_light);
+            _connectItem.setTitle(R.string.cast);
+            _deviceAdapter.notifyDataSetChanged();
         }
     }
 
@@ -498,16 +458,11 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     @Override
     public void onPairingRequired(ConnectableDevice device, DeviceService service, DeviceService.PairingType pairingType) {
         switch (pairingType) {
-            case FIRST_SCREEN:
-                _pairingDialog.show();
-                break;
-
             case PIN_CODE:
                 PairingDialog dialog = new PairingDialog(MainActivity.this, _device);
-                dialog.getPairingDialog("Enter Pairing Code on TV").show();
+                dialog.getPairingDialog("Enter pairing code").show();
                 break;
 
-            case NONE:
             default:
                 break;
         }
@@ -520,30 +475,38 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
     @Override
     public void onDeviceReady(final ConnectableDevice device) {
-        if (_pairingDialog.isShowing() ) {
-            _pairingDialog.dismiss();
+        if (!(device instanceof LocalDevice)) {
+            _connectItem.setIcon(R.drawable.ic_media_route_on_holo_light);
+            _connectItem.setTitle(device.getModelName());
         }
 
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (!(device instanceof LocalDevice)) {
-                    _connectItem.setIcon(R.drawable.ic_media_route_on_holo_light);
-                    _connectItem.setTitle(device.getModelName());
+        if (device.hasCapability(MediaControl.PlayState_Subscribe)) {
+            MediaControl mediaControl = device.getMediaControl();
+            mediaControl.subscribePlayState(new MediaControl.PlayStateListener() {
+                @Override
+                public void onSuccess(final MediaControl.PlayStateStatus playState) {
+                    if (playState == MediaControl.PlayStateStatus.Finished ||
+                            playState == MediaControl.PlayStateStatus.Idle) {
+                        stopPlaying();
+                    }
+                    else if (!findViewById(R.id.media_controller).isShown()) {
+                        initializeMediaController();
+                    }
                 }
 
-                _deviceAdapter.notifyDataSetChanged();
-                playQueuedMedia();
-            }
-        });
+                @Override
+                public void onError(ServiceCommandError error) {
+                    error.printStackTrace();
+                }
+            });
+        }
+
+        _deviceAdapter.notifyDataSetChanged();
+        playQueuedMedia();
     }
 
     @Override
     public void onDeviceDisconnected(ConnectableDevice device) {
-        if (_pairingDialog.isShowing() ) {
-            _pairingDialog.dismiss();
-        }
-
         disconnectDevice();
     }
 
