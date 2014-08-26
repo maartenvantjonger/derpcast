@@ -1005,6 +1005,17 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
     				commandQueue.remove(listener);
     			}
     		}
+
+            Cast.CastApi.joinApplication(mApiClient, CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID)
+                    .setResultCallback(new ResultCallback<ApplicationConnectionResult>() {
+                        @Override
+                        public void onResult(ApplicationConnectionResult applicationConnectionResult) {
+                            if (applicationConnectionResult.getWasLaunched()) {
+                                attachMediaPlayer();
+                                mMediaPlayer.requestStatus(mApiClient);
+                            }
+                        }
+                    });
             
             reportConnected(true);
         }
