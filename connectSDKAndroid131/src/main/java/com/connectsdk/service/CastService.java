@@ -1010,10 +1010,8 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
                     .setResultCallback(new ResultCallback<ApplicationConnectionResult>() {
                         @Override
                         public void onResult(ApplicationConnectionResult applicationConnectionResult) {
-                            if (applicationConnectionResult.getWasLaunched()) {
-                                attachMediaPlayer();
-                                mMediaPlayer.requestStatus(mApiClient);
-                            }
+                            attachMediaPlayer();
+                            mMediaPlayer.requestStatus(mApiClient);
                         }
                     });
             

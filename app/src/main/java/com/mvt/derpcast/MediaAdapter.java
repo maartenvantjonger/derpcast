@@ -81,7 +81,7 @@ public class MediaAdapter extends BaseExpandableListAdapter {
 
         MediaInfo mediaInfo = getMediaInfo(groupPosition, childPosition);
 
-        TextView titleTextView = (TextView) convertView.findViewById(R.id.title_text_view);
+        TextView titleTextView = (TextView) convertView.findViewById(R.id.media_title_text_view);
         titleTextView.setText(mediaInfo.title.toLowerCase());
 
         TextView sizeTextView = (TextView) convertView.findViewById(R.id.size_text_view);

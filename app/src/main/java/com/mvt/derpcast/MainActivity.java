@@ -125,22 +125,8 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if (_device != null && seekBar.isShown()) {
-                    _device.getMediaControl().getPosition(new MediaControl.PositionListener() {
-                        @Override
-                        public void onSuccess(Long position) {
-                            if (_mediaDuration > 0) {
-                                double progress = (position / (double) _mediaDuration) * 1000;
-                                currentTime.setText(stringForTime(position));
-                                seekBar.setProgress((int) progress);
-                            }
-                        }
-
-                        @Override
-                        public void onError(ServiceCommandError error) {
-                            error.printStackTrace();
-                        }
-                    });
+                if (seekBar.isShown()) {
+                    getPlayerPosition();
                 }
             }
         }, 1000, 1000);
@@ -337,7 +323,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 if (mediaPlayer != null) {
                     _playRequested = true;
                     String pageTitle = ((TextView)findViewById(R.id.title_text_view)).getText().toString();
-                    mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, mediaInfo.title, pageTitle, "", false, new MediaPlayer.LaunchListener() {
+                    mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, pageTitle, mediaInfo.title, "", false, new MediaPlayer.LaunchListener() {
                         @Override
                         public void onSuccess(MediaPlayer.MediaLaunchObject object) {
                             _playRequested = false;
@@ -383,7 +369,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                         TextView time = (TextView) findViewById(R.id.time);
                         time.setText(stringForTime(_mediaDuration));
 
-                        findViewById(R.id.seek_bar_layout).setVisibility(View.VISIBLE);
+                        getPlayerPosition();
                     }
 
                     @Override
@@ -392,6 +378,32 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                     }
                 });
             }
+        }
+    }
+
+    private void getPlayerPosition() {
+        if (_device != null) {
+            _device.getMediaControl().getPosition(new MediaControl.PositionListener() {
+                @Override
+                public void onSuccess(Long position) {
+                    if (_mediaDuration > 0) {
+                        double progress = (position / (double) _mediaDuration) * 1000;
+
+                        TextView currentTime = (TextView) findViewById(R.id.time_current);
+                        currentTime.setText(stringForTime(position));
+
+                        SeekBar seekBar = (SeekBar) findViewById(R.id.seek_bar);
+                        seekBar.setProgress((int) progress);
+
+                        findViewById(R.id.seek_bar_layout).setVisibility(View.VISIBLE);
+                    }
+                }
+
+                @Override
+                public void onError(ServiceCommandError error) {
+                    error.printStackTrace();
+                }
+            });
         }
     }
 

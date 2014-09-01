@@ -16,7 +16,7 @@
         android:layout_height="match_parent">
 
         <TextView
-            android:id="@+id/title_text_view"
+            android:id="@+id/media_title_text_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="18sp"

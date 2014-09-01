@@ -11,6 +11,14 @@ import com.connectsdk.device.ConnectableDevice;
 import com.connectsdk.discovery.CapabilityFilter;
 import com.connectsdk.discovery.DiscoveryManager;
 import com.connectsdk.discovery.DiscoveryManagerListener;
+import com.connectsdk.discovery.provider.CastDiscoveryProvider;
+import com.connectsdk.discovery.provider.SSDPDiscoveryProvider;
+import com.connectsdk.discovery.provider.ZeroconfDiscoveryProvider;
+import com.connectsdk.service.AirPlayService;
+import com.connectsdk.service.CastService;
+import com.connectsdk.service.DLNAService;
+import com.connectsdk.service.RokuService;
+import com.connectsdk.service.WebOSTVService;
 import com.connectsdk.service.capability.MediaPlayer;
 import com.connectsdk.service.command.ServiceCommandError;
 
@@ -35,9 +43,14 @@ public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListen
 
         DiscoveryManager.init(context);
         DiscoveryManager discoveryManager = DiscoveryManager.getInstance();
+        discoveryManager.addListener(DeviceAdapter.this);
         discoveryManager.setCapabilityFilters(new CapabilityFilter(MediaPlayer.Display_Video));
         discoveryManager.setPairingLevel(DiscoveryManager.PairingLevel.ON);
-        discoveryManager.addListener(DeviceAdapter.this);
+        discoveryManager.registerDeviceService(WebOSTVService.class, SSDPDiscoveryProvider.class);
+        discoveryManager.registerDeviceService(DLNAService.class, SSDPDiscoveryProvider.class);
+        discoveryManager.registerDeviceService(RokuService.class, SSDPDiscoveryProvider.class);
+        discoveryManager.registerDeviceService(CastService.class, CastDiscoveryProvider.class);
+        discoveryManager.registerDeviceService(AirPlayService.class, ZeroconfDiscoveryProvider.class);
         discoveryManager.start();
     }
 
@@ -69,7 +82,7 @@ public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListen
 
         final ConnectableDevice device = getDevice(i);
 
-        TextView titleTextView = (TextView) view.findViewById(R.id.title_text_view);
+        TextView titleTextView = (TextView) view.findViewById(R.id.device_title_text_view);
         titleTextView.setText(device.getFriendlyName());
 
         TextView protocolTextView = (TextView) view.findViewById(R.id.protocol_text_view);
