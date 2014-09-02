@@ -65,7 +65,7 @@ public class CastDiscoveryProvider implements DiscoveryProvider {
 	public CastDiscoveryProvider(Context context) {
         mMediaRouter = MediaRouter.getInstance(context);
         mMediaRouteSelector = new MediaRouteSelector.Builder()
-        	.addControlCategory(CastMediaControlIntent.categoryForCast(CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID))
+        	.addControlCategory(CastMediaControlIntent.categoryForCast(CastService.DERPCAST_APP_ID)) // DerpCast specific
         	.build();
         
         mMediaRouterCallback = new MediaRouterCallback();

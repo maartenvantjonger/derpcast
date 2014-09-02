@@ -347,7 +347,7 @@ public class ConnectableDevice implements DeviceServiceListener {
 			}
 		}
 		
-		return connectedCount > 0;
+		return connectedCount > 0; // DerpCast specific
 	}
 	// @endcond
 	

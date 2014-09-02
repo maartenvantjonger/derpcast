@@ -45,7 +45,6 @@ import com.google.android.gms.cast.ApplicationMetadata;
 import com.google.android.gms.cast.Cast;
 import com.google.android.gms.cast.Cast.ApplicationConnectionResult;
 import com.google.android.gms.cast.CastDevice;
-import com.google.android.gms.cast.CastMediaControlIntent;
 import com.google.android.gms.cast.MediaInfo;
 import com.google.android.gms.cast.MediaMetadata;
 import com.google.android.gms.cast.MediaStatus;
@@ -73,8 +72,9 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
 		void onConnected();
 	};
 	
-	public static final String ID = "Chromecast";
+	public final static String ID = "Chromecast";
 	public final static String TAG = "Connect SDK";
+    public final static String DERPCAST_APP_ID = "C224368F"; // DerpCast specific
 
 	public final static String PLAY_STATE = "PlayState";
 	public final static String VOLUME = "Volume";
@@ -436,7 +436,7 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
 		    				@Override
 		    				public void onResult(MediaChannelResult result) {
 		    					if (result.getStatus().isSuccess()) {
-		    						LaunchSession launchSession = LaunchSession.launchSessionForAppId(CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID);
+		    						LaunchSession launchSession = LaunchSession.launchSessionForAppId(DERPCAST_APP_ID); // DerpCast specific
 		    						launchSession.setService(CastService.this);
 		    						launchSession.setSessionType(LaunchSessionType.Media);
 
@@ -476,7 +476,7 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
 					    .setMetadata(mMediaMetadata)
 					              .build();
 
-		        Cast.CastApi.launchApplication(mApiClient, CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID, false)
+		        Cast.CastApi.launchApplication(mApiClient, DERPCAST_APP_ID, false) // DerpCast specific
 		    		.setResultCallback(new ApplicationConnectionResultCallback(mediaInfo, listener));
 			}
 		};
@@ -507,9 +507,9 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
 					    .setContentType(mimeType)
 					    .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
 					    .setMetadata(mMediaMetadata)
-					              .build();
+                        .build();
 
-		        Cast.CastApi.launchApplication(mApiClient, CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID, false)
+		        Cast.CastApi.launchApplication(mApiClient, DERPCAST_APP_ID, false) // DerpCast specific
 		    		.setResultCallback(new ApplicationConnectionResultCallback(mediaInfo, listener));
 			}
 		};
@@ -601,7 +601,6 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
 		};
 	
 		ConnectionListener connectionListener = new ConnectionListener() {
-			
 			@Override
 			public void onConnected() {
 				Cast.CastApi.joinApplication(mApiClient, webAppLaunchSession.getAppId(), webAppLaunchSession.getSessionId()).setResultCallback(resultCallback);
@@ -642,7 +641,7 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
 								Status status = result.getStatus();
 
 								if (status.isSuccess()) {
-		    						LaunchSession launchSession = LaunchSession.launchSessionForAppId(CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID);
+		    						LaunchSession launchSession = LaunchSession.launchSessionForAppId(DERPCAST_APP_ID); // DerpCast specific
 		    						launchSession.setService(CastService.this);
 		    						launchSession.setSessionType(LaunchSessionType.Media);
 
@@ -1006,7 +1005,7 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
     			}
     		}
 
-            Cast.CastApi.joinApplication(mApiClient, CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID)
+            Cast.CastApi.joinApplication(mApiClient, DERPCAST_APP_ID) // DerpCast specific
                     .setResultCallback(new ResultCallback<ApplicationConnectionResult>() {
                         @Override
                         public void onResult(ApplicationConnectionResult applicationConnectionResult) {
@@ -1014,7 +1013,7 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
                             mMediaPlayer.requestStatus(mApiClient);
                         }
                     });
-            
+
             reportConnected(true);
         }
     }

@@ -43,7 +43,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     private long _mediaDuration;
     private boolean _playRequested;
     private static final String MEDIA_LOGO_URL = "https://googledrive.com/host/0BzRo13oMy82cbEJRSHM3VEVyUWc/app_logo.png";
-    private static final String CHROMECAST_APP_ID = "C224368F";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -190,7 +189,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                     }
                 } else {
                     _mediaAdapter.setPlayingMediaInfo(mediaInfo);
-                    playQueuedMedia();
+                    playMedia();
                 }
 
                 return false;
@@ -304,7 +303,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         return true;
     }
 
-    private void playQueuedMedia() {
+    private void playMedia() {
 
         if (_device == null) {
             toggleDeviceMenu(true);
@@ -321,26 +320,28 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 _mediaAdapter.setPlayingMediaInfo(null);
             }
             else {
-                MediaPlayer mediaPlayer = _device.getMediaPlayer();
-                if (mediaPlayer != null) {
-                    _playRequested = true;
-                    String pageTitle = ((TextView)findViewById(R.id.title_text_view)).getText().toString();
-                    mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, pageTitle, mediaInfo.title, MEDIA_LOGO_URL, false, new MediaPlayer.LaunchListener() {
-                        @Override
-                        public void onSuccess(MediaPlayer.MediaLaunchObject object) {
-                            _playRequested = false;
-                            initializeMediaController();
-                        }
-
-                        @Override
-                        public void onError(ServiceCommandError error) {
-                            _playRequested = false;
-                            error.printStackTrace();
-                        }
-                    });
-                }
+                playMedia(_device.getMediaPlayer(), mediaInfo);
             }
         }
+    }
+
+    private void playMedia(MediaPlayer mediaPlayer, MediaInfo mediaInfo) {
+        _playRequested = true;
+
+        String pageTitle = ((TextView)findViewById(R.id.title_text_view)).getText().toString();
+        mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, pageTitle, mediaInfo.title, MEDIA_LOGO_URL, false, new MediaPlayer.LaunchListener() {
+            @Override
+            public void onSuccess(MediaPlayer.MediaLaunchObject object) {
+                _playRequested = false;
+                initializeMediaController();
+            }
+
+            @Override
+            public void onError(ServiceCommandError error) {
+                _playRequested = false;
+                error.printStackTrace();
+            }
+        });
     }
 
     private void stopPlaying() {
@@ -500,7 +501,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 @Override
                 public void onSuccess(final MediaControl.PlayStateStatus playState) {
                     if (playState == MediaControl.PlayStateStatus.Finished ||
-                            playState == MediaControl.PlayStateStatus.Idle) {
+                        playState == MediaControl.PlayStateStatus.Idle) {
                         stopPlaying();
                     }
                     else if (!findViewById(R.id.media_controller).isShown()) {
@@ -516,7 +517,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         }
 
         _deviceAdapter.notifyDataSetChanged();
-        playQueuedMedia();
+        playMedia();
     }
 
     @Override
