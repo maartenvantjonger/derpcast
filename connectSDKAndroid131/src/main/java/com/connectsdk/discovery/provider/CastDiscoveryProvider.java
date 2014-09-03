@@ -56,7 +56,7 @@ public class CastDiscoveryProvider implements DiscoveryProvider {
     private CopyOnWriteArrayList<DiscoveryProviderListener> serviceListeners;
     
 	private final static int RESCAN_INTERVAL = 10000;
-	private final static int RESCAN_ATTEMPTS = 3;
+	private final static int RESCAN_ATTEMPTS = 6; // DerpCast Specific
 	private final static int SSDP_TIMEOUT = RESCAN_INTERVAL * RESCAN_ATTEMPTS;
 	
 	private Timer addCallbackTimer;

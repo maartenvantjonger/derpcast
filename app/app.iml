@@ -84,8 +84,8 @@
     <orderEntry type="library" exported="" name="appcompat-v7-19.1.0" level="project" />
     <orderEntry type="library" exported="" name="support-v4-19.1.0" level="project" />
     <orderEntry type="library" exported="" name="androidasync-1.2.6" level="project" />
-    <orderEntry type="library" exported="" name="play-services-5.2.08" level="project" />
     <orderEntry type="library" exported="" name="mediarouter-v7-19.1.0" level="project" />
+    <orderEntry type="library" exported="" name="play-services-5.0.89" level="project" />
     <orderEntry type="library" exported="" name="ion-1.2.7" level="project" />
     <orderEntry type="module" module-name="connectSDKAndroid131" exported="" />
   </component>

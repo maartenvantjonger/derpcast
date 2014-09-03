@@ -43,6 +43,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     private long _mediaDuration;
     private boolean _playRequested;
     private static final String MEDIA_LOGO_URL = "https://googledrive.com/host/0BzRo13oMy82cbEJRSHM3VEVyUWc/app_logo.png";
+    private static final String MEDIA_VIDEO_ART_URL = "https://googledrive.com/host/0BzRo13oMy82cbEJRSHM3VEVyUWc/video_art.png";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -329,7 +330,9 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         _playRequested = true;
 
         String pageTitle = ((TextView)findViewById(R.id.title_text_view)).getText().toString();
-        mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, pageTitle, mediaInfo.title, MEDIA_LOGO_URL, false, new MediaPlayer.LaunchListener() {
+        String imageUrl = mediaInfo.format.startsWith("video/") ? MEDIA_VIDEO_ART_URL : MEDIA_LOGO_URL;
+
+        mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, pageTitle, mediaInfo.title, imageUrl, false, new MediaPlayer.LaunchListener() {
             @Override
             public void onSuccess(MediaPlayer.MediaLaunchObject object) {
                 _playRequested = false;
