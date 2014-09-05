@@ -333,16 +333,22 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
             @Override
             public void onStatusUpdated() {
                 if (subscriptions.size() > 0) {
-                	for (URLServiceSubscription<?> subscription: subscriptions) {
-                		if (subscription.getTarget().equalsIgnoreCase(PLAY_STATE)) {
-    						for (int i = 0; i < subscription.getListeners().size(); i++) {
-    							@SuppressWarnings("unchecked")
-    							ResponseListener<Object> listener = (ResponseListener<Object>) subscription.getListeners().get(i);
-    							PlayStateStatus status = convertPlayerStateToPlayStateStatus(mMediaPlayer.getMediaStatus().getPlayerState());
-    							Util.postSuccess(listener, status);
-    						}
-                		}
-                	}
+
+                    // DerpCast specific
+                    MediaStatus mediaStatus = mMediaPlayer.getMediaStatus();
+                    if (mediaStatus != null) {
+                        PlayStateStatus status = convertPlayerStateToPlayStateStatus(mediaStatus.getPlayerState());
+
+                        for (URLServiceSubscription<?> subscription : subscriptions) {
+                            if (subscription.getTarget().equalsIgnoreCase(PLAY_STATE)) {
+                                for (int i = 0; i < subscription.getListeners().size(); i++) {
+                                    @SuppressWarnings("unchecked")
+                                    ResponseListener<Object> listener = (ResponseListener<Object>) subscription.getListeners().get(i);
+                                    Util.postSuccess(listener, status);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         });

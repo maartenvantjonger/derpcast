@@ -1,6 +1,9 @@
 package com.mvt.derpcast;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -16,6 +19,7 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.connectsdk.device.ConnectableDevice;
 import com.connectsdk.device.ConnectableDeviceListener;
@@ -42,6 +46,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     private MediaAdapter _mediaAdapter;
     private long _mediaDuration;
     private boolean _playRequested;
+    private BroadcastReceiver _broadcastReceiver;
     private static final String MEDIA_LOGO_URL = "https://googledrive.com/host/0BzRo13oMy82cbEJRSHM3VEVyUWc/app_logo.png";
     private static final String MEDIA_VIDEO_ART_URL = "https://googledrive.com/host/0BzRo13oMy82cbEJRSHM3VEVyUWc/video_art.png";
 
@@ -197,11 +202,21 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             }
         });
 
+
+        _broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Toast.makeText(MainActivity.this, "MainActivity action: " + intent.getAction(), Toast.LENGTH_LONG).show();
+            }
+        };
+        registerReceiver(_broadcastReceiver, new IntentFilter("com.mvt.derpcast.action.test"));
+
+
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
         String pageUrl = preferences.getString("pageUrl", null);
 
         Intent intent = getIntent();
-        if (intent.getAction().equals(Intent.ACTION_SEND)) {
+        if (intent != null && Intent.ACTION_SEND.equals(intent.getAction())) {
             pageUrl = intent.getStringExtra(Intent.EXTRA_TEXT);
         }
 
@@ -282,6 +297,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
     @Override
     protected void onDestroy() {
+        unregisterReceiver(_broadcastReceiver);
         DiscoveryManager.destroy();
         super.onDestroy();
     }
@@ -348,11 +364,14 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     }
 
     private void stopPlaying() {
+
         if (!_playRequested) {
             _mediaAdapter.setPlayingMediaInfo(null);
         }
 
         findViewById(R.id.media_controller).setVisibility(View.GONE);
+
+        stopService(new Intent(MainActivity.this, RemoteControlService.class));
     }
 
     private void initializeMediaController() {
@@ -384,32 +403,44 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                     }
                 });
             }
+
+            MediaInfo mediaInfo = _mediaAdapter.getPlayingMedia();
+            if (mediaInfo != null && _device.hasCapability(MediaControl.PlayState_Subscribe)) {
+                String pageTitle = ((TextView) findViewById(R.id.title_text_view)).getText().toString();
+                Intent intent = new Intent(RemoteControlService.ACTION_PLAY);
+                intent.putExtra("title", pageTitle);
+                intent.putExtra("description", mediaInfo.title);
+                startService(intent);
+            }
         }
     }
 
     private void getPlayerPosition() {
-        if (_device != null) {
-            _device.getMediaControl().getPosition(new MediaControl.PositionListener() {
-                @Override
-                public void onSuccess(Long position) {
-                    if (_mediaDuration > 0) {
-                        double progress = (position / (double) _mediaDuration) * 1000;
+        if (_device != null ) {
+            MediaControl mediaControl = _device.getMediaControl();
+            if (mediaControl != null) {
+                mediaControl.getPosition(new MediaControl.PositionListener() {
+                    @Override
+                    public void onSuccess(Long position) {
+                        if (_mediaDuration > 0) {
+                            double progress = (position / (double) _mediaDuration) * 1000;
 
-                        TextView currentTime = (TextView) findViewById(R.id.time_current);
-                        currentTime.setText(stringForTime(position));
+                            TextView currentTime = (TextView) findViewById(R.id.time_current);
+                            currentTime.setText(stringForTime(position));
 
-                        SeekBar seekBar = (SeekBar) findViewById(R.id.seek_bar);
-                        seekBar.setProgress((int) progress);
+                            SeekBar seekBar = (SeekBar) findViewById(R.id.seek_bar);
+                            seekBar.setProgress((int) progress);
 
-                        findViewById(R.id.seek_bar_layout).setVisibility(View.VISIBLE);
+                            findViewById(R.id.seek_bar_layout).setVisibility(View.VISIBLE);
+                        }
                     }
-                }
 
-                @Override
-                public void onError(ServiceCommandError error) {
-                    error.printStackTrace();
-                }
-            });
+                    @Override
+                    public void onError(ServiceCommandError error) {
+                        error.printStackTrace();
+                    }
+                });
+            }
         }
     }
 
@@ -504,7 +535,9 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 @Override
                 public void onSuccess(final MediaControl.PlayStateStatus playState) {
                     if (playState == MediaControl.PlayStateStatus.Finished ||
-                        playState == MediaControl.PlayStateStatus.Idle) {
+                        playState == MediaControl.PlayStateStatus.Idle ||
+                        playState == MediaControl.PlayStateStatus.Unknown) {
+
                         stopPlaying();
                     }
                     else if (!findViewById(R.id.media_controller).isShown()) {
