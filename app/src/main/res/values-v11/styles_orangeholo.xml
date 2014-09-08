@@ -19,9 +19,6 @@
         <item name="android:dropDownSpinnerStyle">@style/SpinnerOrangeHolo</item>
         <item name="android:progressBarStyleHorizontal">@style/ProgressBarOrangeHolo</item>
         <item name="android:seekBarStyle">@style/SeekBarOrangeHolo</item>
-        <item name="android:ratingBarStyle">@style/RatingBarOrangeHolo</item>
-        <item name="android:ratingBarStyleIndicator">@style/RatingBarBigOrangeHolo</item>
-        <item name="android:ratingBarStyleSmall">@style/RatingBarSmallOrangeHolo</item>
         <item name="android:buttonStyleToggle">@style/ToggleOrangeHolo</item>
         <item name="android:listChoiceBackgroundIndicator">@drawable/orangeholo_list_selector_holo_light</item>
         <item name="android:activatedBackgroundIndicator">@drawable/orangeholo_activated_background_holo_light</item>
@@ -55,21 +52,6 @@
         <item name="android:progressDrawable">@drawable/orangeholo_scrubber_progress_horizontal_holo_light</item>
         <item name="android:indeterminateDrawable">@drawable/orangeholo_scrubber_progress_horizontal_holo_light</item>
         <item name="android:thumb">@drawable/orangeholo_scrubber_control_selector_holo_light</item>
-    </style>
-
-    <style name="RatingBarOrangeHolo" parent="android:Widget.Holo.Light.RatingBar">
-        <item name="android:progressDrawable">@drawable/orangeholo_ratingbar_full_holo_light</item>
-        <item name="android:indeterminateDrawable">@drawable/orangeholo_ratingbar_full_holo_light</item>
-    </style>
-
-    <style name="RatingBarBigOrangeHolo" parent="android:Widget.Holo.Light.RatingBar.Indicator">
-        <item name="android:progressDrawable">@drawable/orangeholo_ratingbar_holo_light</item>
-        <item name="android:indeterminateDrawable">@drawable/orangeholo_ratingbar_holo_light</item>
-    </style>
-
-    <style name="RatingBarSmallOrangeHolo" parent="android:Widget.Holo.Light.RatingBar.Small">
-        <item name="android:progressDrawable">@drawable/orangeholo_ratingbar_small_holo_light</item>
-        <item name="android:indeterminateDrawable">@drawable/orangeholo_ratingbar_small_holo_light</item>
     </style>
 
     <style name="ToggleOrangeHolo" parent="android:Widget.Holo.Light.Button.Toggle">

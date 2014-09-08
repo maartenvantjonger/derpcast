@@ -20,6 +20,9 @@ public class RemoteControlEventReceiver extends BroadcastReceiver {
                     case KeyEvent.KEYCODE_MEDIA_PAUSE:
                         context.startService(new Intent(RemoteControlService.ACTION_PAUSE));
                         break;
+                    case KeyEvent.KEYCODE_MEDIA_STOP:
+                        context.startService(new Intent(RemoteControlService.ACTION_STOP));
+                        break;
                 }
 
                 context.sendBroadcast(new Intent("com.mvt.derpcast.action.test"));

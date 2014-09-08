@@ -29,7 +29,6 @@ import com.connectsdk.service.DeviceService;
 import com.connectsdk.service.capability.MediaControl;
 import com.connectsdk.service.capability.MediaPlayer;
 import com.connectsdk.service.capability.VolumeControl;
-import com.connectsdk.service.capability.listeners.ResponseListener;
 import com.connectsdk.service.command.ServiceCommandError;
 
 import java.util.HashMap;
@@ -61,16 +60,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             @Override
             public void onClick(View view) {
                 if (_device != null) {
-                    _device.getMediaControl().play(new ResponseListener<Object>() {
-                        @Override
-                        public void onSuccess(Object object) {
-                        }
-
-                        @Override
-                        public void onError(ServiceCommandError error) {
-                            error.printStackTrace();
-                        }
-                    });
+                    _device.getMediaControl().play(null);
                 }
             }
         });
@@ -80,34 +70,21 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             @Override
             public void onClick(View view) {
                 if (_device != null) {
-                    _device.getMediaControl().pause(new ResponseListener<Object>() {
-                        @Override
-                        public void onSuccess(Object object) {}
-
-                        @Override
-                        public void onError(ServiceCommandError error) {
-                            error.printStackTrace();
-                        }
-                    });
+                    _device.getMediaControl().pause(null);
                 }
             }
         });
 
-
-        View.OnLongClickListener longClickListener = new View.OnLongClickListener() {
+        ImageButton stopButton = (ImageButton)findViewById(R.id.stop_button);
+        stopButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onLongClick(View view) {
+            public void onClick(View view) {
                 if (_device != null) {
                     _device.getMediaControl().stop(null);
                     stopPlaying();
                 }
-
-                return true;
             }
-        };
-
-        playButton.setOnLongClickListener(longClickListener);
-        pauseButton.setOnLongClickListener(longClickListener);
+        });
 
         final TextView currentTime = (TextView)findViewById(R.id.time_current);
         final SeekBar seekBar = (SeekBar)findViewById(R.id.seek_bar);
@@ -202,7 +179,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             }
         });
 
-
         _broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -210,7 +186,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             }
         };
         registerReceiver(_broadcastReceiver, new IntentFilter("com.mvt.derpcast.action.test"));
-
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
         String pageUrl = preferences.getString("pageUrl", null);
@@ -321,7 +296,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     }
 
     private void playMedia() {
-
         if (_device == null) {
             toggleDeviceMenu(true);
             return;
@@ -364,7 +338,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     }
 
     private void stopPlaying() {
-
         if (!_playRequested) {
             _mediaAdapter.setPlayingMediaInfo(null);
         }
@@ -375,7 +348,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     }
 
     private void initializeMediaController() {
-
         if (_device != null) {
             findViewById(R.id.media_controller).setVisibility(View.VISIBLE);
 

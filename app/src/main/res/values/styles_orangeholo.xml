@@ -18,9 +18,6 @@
         <item name="android:spinnerDropDownItemStyle">@style/SpinnerDropDownItemOrangeHolo</item>
         <item name="android:progressBarStyleHorizontal">@style/ProgressBarOrangeHolo</item>
         <item name="android:seekBarStyle">@style/SeekBarOrangeHolo</item>
-        <item name="android:ratingBarStyle">@style/RatingBarOrangeHolo</item>
-        <item name="android:ratingBarStyleIndicator">@style/RatingBarBigOrangeHolo</item>
-        <item name="android:ratingBarStyleSmall">@style/RatingBarSmallOrangeHolo</item>
         <item name="android:buttonStyleToggle">@style/ToggleOrangeHolo</item>
         <item name="android:listViewStyle">@style/ListViewOrangeHolo</item>
         <item name="android:listViewWhiteStyle">@style/ListViewOrangeHolo.White</item>
@@ -108,25 +105,6 @@
         <item name="android:thumbOffset">16dip</item>
         <item name="android:paddingLeft">16dip</item>
         <item name="android:paddingRight">16dip</item>
-    </style>
-
-    <style name="RatingBarOrangeHolo" parent="android:Widget.RatingBar">
-        <item name="android:progressDrawable">@drawable/orangeholo_ratingbar_full_holo_light</item>
-        <item name="android:indeterminateDrawable">@drawable/orangeholo_ratingbar_full_holo_light</item>
-    </style>
-
-    <style name="RatingBarBigOrangeHolo" parent="android:Widget.RatingBar">
-        <item name="android:progressDrawable">@drawable/orangeholo_ratingbar_holo_light</item>
-        <item name="android:indeterminateDrawable">@drawable/orangeholo_ratingbar_holo_light</item>
-        <item name="android:minHeight">35dip</item>
-        <item name="android:maxHeight">35dip</item>
-    </style>
-
-    <style name="RatingBarSmallOrangeHolo" parent="android:Widget.RatingBar">
-        <item name="android:progressDrawable">@drawable/orangeholo_ratingbar_small_holo_light</item>
-        <item name="android:indeterminateDrawable">@drawable/orangeholo_ratingbar_small_holo_light</item>
-        <item name="android:minHeight">16dip</item>
-        <item name="android:maxHeight">16dip</item>
     </style>
 
     <style name="ToggleOrangeHolo" parent="android:Widget.Button.Toggle">

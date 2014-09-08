@@ -15,6 +15,7 @@ public class RemoteControlService extends Service {
 
     public static final String ACTION_PLAY = "com.mvt.derpcast.action.PLAY";
     public static final String ACTION_PAUSE = "com.mvt.derpcast.action.PAUSE";
+    public static final String ACTION_STOP = "com.mvt.derpcast.action.STOP";
 
     private static RemoteControlClient _remoteControlClient;
 
