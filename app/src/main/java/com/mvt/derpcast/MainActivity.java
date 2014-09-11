@@ -94,7 +94,10 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             public void onStopTrackingTouch(SeekBar seekBar) {
                 int progress = seekBar.getProgress();
                 long newPosition = (_mediaDuration * progress) / 1000L;
-                _device.getMediaControl().seek(newPosition, null);
+                MediaControl mediaControl = _device.getMediaControl();
+                if (mediaControl != null) {
+                    mediaControl.seek(newPosition, null);
+                }
             }
         });
 
@@ -322,7 +325,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     private void playMedia(MediaPlayer mediaPlayer, MediaInfo mediaInfo) {
         _playRequested = true;
 
-        initializeMediaController();
+        findViewById(R.id.media_controller).setVisibility(View.VISIBLE);
 
         String pageTitle = ((TextView)findViewById(R.id.title_text_view)).getText().toString();
         String imageUrl = mediaInfo.format.startsWith("video/") ? MEDIA_VIDEO_ART_URL : MEDIA_LOGO_URL;
@@ -331,6 +334,8 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             @Override
             public void onSuccess(MediaPlayer.MediaLaunchObject object) {
                 _playRequested = false;
+                initializeNotification();
+                initializeMediaController();
             }
 
             @Override
@@ -342,34 +347,51 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     }
 
     private void play() {
-        if (_device != null) _device.getMediaControl().play(null);
-        startService(new Intent(RemoteControlService.ACTION_PLAY));
+        if (_device != null) {
+            MediaControl mediaControl = _device.getMediaControl();
+            if (mediaControl != null) {
+                mediaControl.play(null);
+            }
+        }
+
+        startService(new Intent(RemoteControlService.ACTION_PLAY, null, MainActivity.this, RemoteControlService.class));
     }
 
     private void pause() {
-        if (_device != null) _device.getMediaControl().pause(null);
-        startService(new Intent(RemoteControlService.ACTION_PAUSE));
+        if (_device != null) {
+            MediaControl mediaControl = _device.getMediaControl();
+            if (mediaControl != null) {
+                mediaControl.pause(null);
+            }
+        }
+
+        startService(new Intent(RemoteControlService.ACTION_PAUSE, null, MainActivity.this, RemoteControlService.class));
     }
 
     private void stop() {
-        if (_device != null) _device.getMediaControl().stop(null);
+        if (_device != null) {
+            MediaControl mediaControl = _device.getMediaControl();
+            if (mediaControl != null) {
+                mediaControl.stop(null);
+            }
+        }
+
         stopService(new Intent(MainActivity.this, RemoteControlService.class));
 
         if (!_playRequested) {
             _mediaAdapter.setPlayingMediaInfo(null);
         }
 
+        findViewById(R.id.seek_bar_layout).setVisibility(View.GONE);
         findViewById(R.id.media_controller).setVisibility(View.GONE);
     }
 
     private void initializeMediaController() {
-        if (_device != null) {
-            findViewById(R.id.media_controller).setVisibility(View.VISIBLE);
-
-            if (_device.hasCapability(MediaControl.Seek) &&
+        if (_device != null &&
+                _device.hasCapability(MediaControl.Seek) &&
                 _device.hasCapability(MediaControl.Duration)) {
-
-                MediaControl mediaControl = _device.getMediaControl();
+            MediaControl mediaControl = _device.getMediaControl();
+            if (mediaControl != null) {
                 mediaControl.getDuration(new MediaControl.DurationListener() {
                     @Override
                     public void onSuccess(Long duration) {
@@ -390,15 +412,17 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                     }
                 });
             }
+        }
+    }
 
-            MediaInfo mediaInfo = _mediaAdapter.getPlayingMedia();
-            if (mediaInfo != null) {
-                String pageTitle = ((TextView) findViewById(R.id.title_text_view)).getText().toString();
-                Intent intent = new Intent(RemoteControlService.ACTION_PLAY);
-                intent.putExtra("title", pageTitle);
-                intent.putExtra("description", mediaInfo.title);
-                startService(intent);
-            }
+    private void initializeNotification() {
+        MediaInfo mediaInfo = _mediaAdapter.getPlayingMedia();
+        if (mediaInfo != null) {
+            String pageTitle = ((TextView) findViewById(R.id.title_text_view)).getText().toString();
+            Intent intent = new Intent(RemoteControlService.ACTION_PLAY, null, MainActivity.this, RemoteControlService.class);
+            intent.putExtra("title", pageTitle);
+            intent.putExtra("description", mediaInfo.title);
+            startService(intent);
         }
     }
 
@@ -437,7 +461,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             case R.id.action_connect:
                 toggleDeviceMenu(false);
                 return true;
-
             case R.id.action_about:
                 Intent intent = new Intent(MainActivity.this, AboutActivity.class);
                 startActivity(intent);
@@ -498,7 +521,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 PairingDialog dialog = new PairingDialog(MainActivity.this, _device);
                 dialog.getPairingDialog("Enter pairing code").show();
                 break;
-
             default:
                 break;
         }
@@ -518,25 +540,29 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
         if (device.hasCapability(MediaControl.PlayState_Subscribe)) {
             MediaControl mediaControl = device.getMediaControl();
-            mediaControl.subscribePlayState(new MediaControl.PlayStateListener() {
-                @Override
-                public void onSuccess(final MediaControl.PlayStateStatus playState) {
-                    if (playState == MediaControl.PlayStateStatus.Finished ||
-                        playState == MediaControl.PlayStateStatus.Idle ||
-                        playState == MediaControl.PlayStateStatus.Unknown) {
+            if (mediaControl != null) {
+                mediaControl.subscribePlayState(new MediaControl.PlayStateListener() {
+                    @Override
+                    public void onSuccess(final MediaControl.PlayStateStatus playState) {
+                        if (playState == MediaControl.PlayStateStatus.Finished ||
+                                playState == MediaControl.PlayStateStatus.Idle ||
+                                playState == MediaControl.PlayStateStatus.Unknown) {
 
-                        stop();
-                    }
-                    else if (!findViewById(R.id.media_controller).isShown()) {
-                        initializeMediaController();
-                    }
-                }
+                            stop();
+                        }
+                        else if (!findViewById(R.id.media_controller).isShown()) {
+                            findViewById(R.id.media_controller).setVisibility(View.VISIBLE);
 
-                @Override
-                public void onError(ServiceCommandError error) {
-                    error.printStackTrace();
-                }
-            });
+                            initializeMediaController();
+                        }
+                    }
+
+                    @Override
+                    public void onError(ServiceCommandError error) {
+                        error.printStackTrace();
+                    }
+                });
+            }
         }
 
         _deviceAdapter.notifyDataSetChanged();

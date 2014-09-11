@@ -11,9 +11,11 @@
     <LinearLayout
         android:id="@+id/description_layout"
         android:orientation="vertical"
-        android:layout_alignParentLeft="true"
         android:layout_width="wrap_content"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_alignParentLeft="true"
+        android:layout_toLeftOf="@+id/playing_image_view"
+        android:layout_marginRight="5dp">
 
         <TextView
             android:id="@+id/media_title_text_view"
@@ -32,9 +34,9 @@
     </LinearLayout>
 
     <ImageView
-        android:id="@+id/playing_image_view"
-        android:layout_width="8dp"
-        android:layout_height="8dp"
+        android:id="@id/playing_image_view"
+        android:layout_width="10dp"
+        android:layout_height="10dp"
         android:layout_centerVertical="true"
         android:layout_alignParentRight="true"
         android:visibility="invisible"

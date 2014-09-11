@@ -3,6 +3,7 @@
     android:id="@+id/main_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:animateLayoutChanges="true"
     android:clickable="true"
     tools:context=".MainActivity">
 
@@ -10,8 +11,8 @@
         android:id="@+id/slide_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/media_controller"
-        android:animateLayoutChanges="true">
+        android:animateLayoutChanges="true"
+        android:layout_above="@+id/media_controller">
 
         <LinearLayout
             android:id="@+id/device_layout"
