@@ -15,13 +15,12 @@ public class RemoteControlService extends Service {
 
     public static final String ACTION_PLAY = "com.mvt.derpcast.action.PLAY";
     public static final String ACTION_PAUSE = "com.mvt.derpcast.action.PAUSE";
-    public static final String ACTION_STOP = "com.mvt.derpcast.action.STOP";
 
     private static RemoteControlClient _remoteControlClient;
 
     public void setLockScreenControls(Context context, String title, String description) {
 
-        ComponentName eventReceiver = new ComponentName(context, RemoteControlEventReceiver.class);
+        ComponentName eventReceiver = new ComponentName(context, MediaButtonEventReceiver.class);
 
         if (_remoteControlClient == null) {
             Intent mediaButtonIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
@@ -30,14 +29,14 @@ public class RemoteControlService extends Service {
 
             _remoteControlClient = new RemoteControlClient(mediaPendingIntent);
             _remoteControlClient.setTransportControlFlags(
-                RemoteControlClient.FLAG_KEY_MEDIA_PLAY | RemoteControlClient.FLAG_KEY_MEDIA_PAUSE);
+                RemoteControlClient.FLAG_KEY_MEDIA_PLAY_PAUSE);
         }
 
         _remoteControlClient
-                .editMetadata(false)
-                .putString(MediaMetadataRetriever.METADATA_KEY_TITLE, title)
-                .putString(MediaMetadataRetriever.METADATA_KEY_ALBUM, description)
-                .apply();
+            .editMetadata(false)
+            .putString(MediaMetadataRetriever.METADATA_KEY_TITLE, title)
+            .putString(MediaMetadataRetriever.METADATA_KEY_ALBUM, description)
+            .apply();
 
         AudioManager audioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
         audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
@@ -58,7 +57,7 @@ public class RemoteControlService extends Service {
         mainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent contentIntent = PendingIntent.getActivity(context, 0, mainActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Intent eventReceiverIntent = new Intent(context, RemoteControlEventReceiver.class);
+        Intent eventReceiverIntent = new Intent(context, MediaButtonEventReceiver.class);
         PendingIntent deleteIntent = PendingIntent.getBroadcast(context, 0, eventReceiverIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         Notification notification = new Notification.Builder(context)
@@ -79,7 +78,6 @@ public class RemoteControlService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
         if (intent != null) {
             String action = intent.getAction();
             if (ACTION_PLAY.equals(action)) {
@@ -97,7 +95,7 @@ public class RemoteControlService extends Service {
             }
         }
 
-        return START_NOT_STICKY;
+        return START_STICKY;
     }
 
     @Override

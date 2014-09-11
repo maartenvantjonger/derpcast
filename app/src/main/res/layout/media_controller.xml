@@ -9,27 +9,28 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:paddingTop="4dip"
+        android:paddingTop="6dip"
+        android:paddingBottom="6dip"
         android:orientation="horizontal">
 
         <ImageButton
             android:id="@+id/play_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginRight="4dp"
+            android:layout_marginRight="8dp"
             android:background="@drawable/play" />
 
         <ImageButton
             android:id="@+id/pause_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginRight="8dp"
             android:background="@drawable/pause" />
 
         <ImageButton
             android:id="@+id/stop_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginRight="4dp"
             android:background="@drawable/stop" />
 
     </LinearLayout>

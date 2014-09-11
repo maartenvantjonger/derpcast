@@ -7,6 +7,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
 import android.view.KeyEvent;
@@ -19,7 +20,6 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.connectsdk.device.ConnectableDevice;
 import com.connectsdk.device.ConnectableDeviceListener;
@@ -59,9 +59,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (_device != null) {
-                    _device.getMediaControl().play(null);
-                }
+                play();
             }
         });
 
@@ -69,9 +67,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         pauseButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (_device != null) {
-                    _device.getMediaControl().pause(null);
-                }
+                pause();
             }
         });
 
@@ -79,10 +75,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         stopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (_device != null) {
-                    _device.getMediaControl().stop(null);
-                    stopPlaying();
-                }
+                stop();
             }
         });
 
@@ -136,7 +129,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                ConnectableDevice device = (ConnectableDevice)parent.getItemAtPosition(position);
+                ConnectableDevice device = (ConnectableDevice) parent.getItemAtPosition(position);
                 boolean sameDeviceClicked = _device != null && _device.getId().equals(device.getId());
 
                 disconnectDevice();
@@ -144,8 +137,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
                 if (sameDeviceClicked) {
                     editor.remove("lastDevice").apply();
-                }
-                else {
+                } else {
                     connectDevice(device);
                     editor.putString("lastDevice", _device.getId()).apply();
                 }
@@ -167,8 +159,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 MediaInfo mediaInfo = _mediaAdapter.getMediaInfo(groupPosition, childPosition);
                 if (mediaInfo.equals(_mediaAdapter.getPlayingMedia())) {
                     if (_device != null) {
-                        _device.getMediaControl().stop(null);
-                        stopPlaying();
+                        stop();
                     }
                 } else {
                     _mediaAdapter.setPlayingMediaInfo(mediaInfo);
@@ -182,10 +173,22 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         _broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Toast.makeText(MainActivity.this, "MainActivity action: " + intent.getAction(), Toast.LENGTH_LONG).show();
+                KeyEvent keyEvent = (KeyEvent)intent.getExtras().get(Intent.EXTRA_KEY_EVENT);
+                if (keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+                    switch (keyEvent.getKeyCode()) {
+                        case KeyEvent.KEYCODE_MEDIA_PLAY:
+                            play();
+                            break;
+                        case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
+                            pause();
+                            break;
+                    }
+                }
             }
         };
-        registerReceiver(_broadcastReceiver, new IntentFilter("com.mvt.derpcast.action.test"));
+
+        LocalBroadcastManager.getInstance(MainActivity.this)
+            .registerReceiver(_broadcastReceiver, new IntentFilter(Intent.ACTION_MEDIA_BUTTON));
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
         String pageUrl = preferences.getString("pageUrl", null);
@@ -272,7 +275,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
     @Override
     protected void onDestroy() {
-        unregisterReceiver(_broadcastReceiver);
+        LocalBroadcastManager.getInstance(MainActivity.this).unregisterReceiver(_broadcastReceiver);
         DiscoveryManager.destroy();
         super.onDestroy();
     }
@@ -337,14 +340,25 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         });
     }
 
-    private void stopPlaying() {
+    private void play() {
+        if (_device != null) _device.getMediaControl().play(null);
+        startService(new Intent(RemoteControlService.ACTION_PLAY));
+    }
+
+    private void pause() {
+        if (_device != null) _device.getMediaControl().pause(null);
+        startService(new Intent(RemoteControlService.ACTION_PAUSE));
+    }
+
+    private void stop() {
+        if (_device != null) _device.getMediaControl().stop(null);
+        stopService(new Intent(MainActivity.this, RemoteControlService.class));
+
         if (!_playRequested) {
             _mediaAdapter.setPlayingMediaInfo(null);
         }
 
         findViewById(R.id.media_controller).setVisibility(View.GONE);
-
-        stopService(new Intent(MainActivity.this, RemoteControlService.class));
     }
 
     private void initializeMediaController() {
@@ -377,7 +391,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             }
 
             MediaInfo mediaInfo = _mediaAdapter.getPlayingMedia();
-            if (mediaInfo != null && _device.hasCapability(MediaControl.PlayState_Subscribe)) {
+            if (mediaInfo != null) {
                 String pageTitle = ((TextView) findViewById(R.id.title_text_view)).getText().toString();
                 Intent intent = new Intent(RemoteControlService.ACTION_PLAY);
                 intent.putExtra("title", pageTitle);
@@ -446,11 +460,11 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
     private void disconnectDevice() {
         if (_device != null) {
+            stop();
+
             _device.removeListener(MainActivity.this);
             _device.disconnect();
             _device = null;
-
-            stopPlaying();
 
             _connectItem.setIcon(R.drawable.ic_media_route_off_holo_light);
             _connectItem.setTitle(R.string.cast);
@@ -510,7 +524,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                         playState == MediaControl.PlayStateStatus.Idle ||
                         playState == MediaControl.PlayStateStatus.Unknown) {
 
-                        stopPlaying();
+                        stop();
                     }
                     else if (!findViewById(R.id.media_controller).isShown()) {
                         initializeMediaController();
