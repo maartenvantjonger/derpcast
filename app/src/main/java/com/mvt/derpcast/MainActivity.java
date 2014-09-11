@@ -322,6 +322,8 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     private void playMedia(MediaPlayer mediaPlayer, MediaInfo mediaInfo) {
         _playRequested = true;
 
+        initializeMediaController();
+
         String pageTitle = ((TextView)findViewById(R.id.title_text_view)).getText().toString();
         String imageUrl = mediaInfo.format.startsWith("video/") ? MEDIA_VIDEO_ART_URL : MEDIA_LOGO_URL;
 
@@ -329,7 +331,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             @Override
             public void onSuccess(MediaPlayer.MediaLaunchObject object) {
                 _playRequested = false;
-                initializeMediaController();
             }
 
             @Override
