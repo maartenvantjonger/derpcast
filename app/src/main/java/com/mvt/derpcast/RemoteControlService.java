@@ -1,6 +1,5 @@
 package com.mvt.derpcast;
 
-import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
@@ -52,25 +51,6 @@ public class RemoteControlService extends Service {
         }
     }
 
-    private void setNotification(Context context, String title, String description) {
-        Intent mainActivityIntent = new Intent(context, MainActivity.class);
-        mainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent contentIntent = PendingIntent.getActivity(context, 0, mainActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        Intent eventReceiverIntent = new Intent(context, MediaButtonEventReceiver.class);
-        PendingIntent deleteIntent = PendingIntent.getBroadcast(context, 0, eventReceiverIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        Notification notification = new Notification.Builder(context)
-            .setContentTitle(title)
-            .setContentText(description)
-            .setSmallIcon(R.drawable.main_icon)
-            .setContentIntent(contentIntent)
-            .setDeleteIntent(deleteIntent)
-            .build();
-
-        startForeground(1, notification);
-    }
-
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -86,8 +66,6 @@ public class RemoteControlService extends Service {
                 String description = intent.getStringExtra("description");
 
                 setLockScreenControls(context, title, description);
-                setNotification(context, title, description);
-
                 _remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PLAYING);
             }
             else if (ACTION_PAUSE.equals(action)) {
@@ -101,7 +79,6 @@ public class RemoteControlService extends Service {
     @Override
     public void onDestroy() {
         removeLockScreenControls(getApplicationContext());
-        stopForeground(true);
         super.onDestroy();
     }
 }

@@ -3,121 +3,25 @@ package com.mvt.derpcast;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseExpandableListAdapter;
+import android.widget.BaseAdapter;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-public class MediaAdapter extends BaseExpandableListAdapter {
 
-    private Map<String, List<MediaInfo>> _mediaInfos;
+public class MediaAdapter extends BaseAdapter {
+
+    private List<MediaInfo> _mediaInfos = new ArrayList<MediaInfo>();
     private MediaInfo _playingMediaInfo;
 
-    public MediaAdapter() {
-        _mediaInfos = new HashMap<String, List<MediaInfo>>();
-    }
-
-    @Override
-    public int getGroupCount() {
-        return _mediaInfos.size();
-    }
-
-    @Override
-    public int getChildrenCount(int groupPosition) {
-        Object group = getGroup(groupPosition);
-        return _mediaInfos.get(group).size();
-    }
-
-    @Override
-    public Object getGroup(int groupPosition) {
-        Object[] groups = _mediaInfos.keySet().toArray();
-        return (String)groups[groupPosition];
-    }
-
-    @Override
-    public Object getChild(int groupPosition, int childPosition) {
-        Object group = getGroup(groupPosition);
-        return _mediaInfos.get(group).get(childPosition);
-    }
-
-    @Override
-    public long getGroupId(int groupPosition) {
-        return 0;
-    }
-
-    @Override
-    public long getChildId(int groupPosition, int childPosition) {
-        return 0;
-    }
-
-    @Override
-    public boolean hasStableIds() {
-        return false;
-    }
-
-    @Override
-    public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
-        if (convertView == null) {
-            LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-            convertView = inflater.inflate(R.layout.media_list_group_item, parent, false);
-        }
-
-        TextView groupTextView = (TextView)convertView.findViewById(R.id.group_text_view);
-        groupTextView.setText((String)getGroup(groupPosition));
-
-        return convertView;
-    }
-
-    @Override
-    public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
-        if (convertView == null) {
-            LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-            convertView = inflater.inflate(R.layout.media_list_item, parent, false);
-        }
-
-        MediaInfo mediaInfo = getMediaInfo(groupPosition, childPosition);
-
-        TextView titleTextView = (TextView) convertView.findViewById(R.id.media_title_text_view);
-        titleTextView.setText(mediaInfo.title.toLowerCase());
-
-        TextView sizeTextView = (TextView) convertView.findViewById(R.id.size_text_view);
-
-        int megaBytes = (int)Math.ceil(mediaInfo.size / 1048576d);
-        sizeTextView.setText(megaBytes + "MB");
-
-        View playingImageView = convertView.findViewById(R.id.playing_image_view);
-        playingImageView.setVisibility(mediaInfo == _playingMediaInfo ? View.VISIBLE : View.INVISIBLE);
-
-        return convertView;
-    }
-
-    @Override
-    public boolean isChildSelectable(int groupPosition, int childPosition) {
-        return true;
-    }
-
     public synchronized void addMediaInfo(MediaInfo mediaInfo) {
-
-        String mediaType = mediaInfo.format.substring(0, mediaInfo.format.indexOf('/'));
-        if (!_mediaInfos.containsKey(mediaType)) {
-            _mediaInfos.put(mediaType, new ArrayList<MediaInfo>());
-        }
-
-        List<MediaInfo> group = _mediaInfos.get(mediaType);
-        if (!group.contains(mediaInfo)) {
-            group.add(mediaInfo);
-            Collections.sort(group);
+        if (!_mediaInfos.contains(mediaInfo)) {
+            _mediaInfos.add(mediaInfo);
+            Collections.sort(_mediaInfos);
             notifyDataSetChanged();
         }
-    }
-
-    public MediaInfo getMediaInfo(int groupPosition, int childPosition) {
-        MediaInfo mediaInfo = (MediaInfo)getChild(groupPosition, childPosition);
-        return mediaInfo;
     }
 
     public void setPlayingMediaInfo(MediaInfo mediaInfo) {
@@ -128,5 +32,50 @@ public class MediaAdapter extends BaseExpandableListAdapter {
     public MediaInfo getPlayingMedia() {
         return _playingMediaInfo;
     }
-}
 
+    public void clear() {
+        _mediaInfos.clear();
+    }
+
+    @Override
+    public int getCount() {
+        return _mediaInfos.size();
+    }
+
+    @Override
+    public Object getItem(int i) {
+        return getMediaInfo(i);
+    }
+
+    public MediaInfo getMediaInfo(int i) {
+        return _mediaInfos.get(i);
+    }
+
+    @Override
+    public long getItemId(int i) {
+        return 0;
+    }
+
+    @Override
+    public View getView(int i, View view, final ViewGroup viewGroup) {
+        if (view == null) {
+            LayoutInflater inflater = LayoutInflater.from(viewGroup.getContext());
+            view = inflater.inflate(R.layout.media_list_item, viewGroup, false);
+        }
+
+        final MediaInfo mediaInfo = getMediaInfo(i);
+
+        TextView mediaTitleTextView = (TextView) view.findViewById(R.id.media_title_text_view);
+        mediaTitleTextView.setText(mediaInfo.title.toLowerCase());
+
+        TextView sizeTextView = (TextView) view.findViewById(R.id.size_text_view);
+
+        int megaBytes = (int)Math.ceil(mediaInfo.size / 1048576d);
+        sizeTextView.setText(megaBytes + "MB");
+
+        View playingImageView = view.findViewById(R.id.playing_image_view);
+        playingImageView.setVisibility(mediaInfo == _playingMediaInfo ? View.VISIBLE : View.INVISIBLE);
+
+        return view;
+    }
+}

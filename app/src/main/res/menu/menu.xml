@@ -5,7 +5,12 @@
         android:title="@string/cast"
         android:enabled="true"
         android:icon="@drawable/ic_media_route_off_holo_light"
-        app:showAsAction="always" />
+        app:showAsAction="ifRoom" />
+    <item android:id="@+id/action_refresh"
+        android:title="@string/refresh"
+        android:enabled="true"
+        android:visible="false"
+        app:showAsAction="never" />
     <item android:id="@+id/action_about"
         android:title="@string/about"
         android:enabled="true"

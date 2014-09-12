@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">DerpCast</string>
     <string name="cast">Cast</string>
+    <string name="refresh">Refresh</string>
     <string name="about">About</string>
     <string name="usage">Load media by choosing DerpCast in your browser\'s share dialog.</string>
     <string name="no_media">Sorry, no supported media was found on this page.</string>
