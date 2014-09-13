@@ -133,11 +133,11 @@ public class MediaScraper {
             try {
                 URL baseUrl = new URL(pageUrl);
                 if (url.startsWith("/")) {
-                    url = baseUrl.getProtocol() +
+                    absoluteUrl = baseUrl.getProtocol() +
                         "://" + baseUrl.getAuthority() + url;
                 }
                 else {
-                    url = baseUrl.getProtocol() +
+                    absoluteUrl = baseUrl.getProtocol() +
                         "://" + baseUrl.getAuthority() + baseUrl.getPath() + url;
                 }
             }
