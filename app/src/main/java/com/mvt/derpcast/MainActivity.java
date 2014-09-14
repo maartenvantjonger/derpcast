@@ -120,7 +120,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         }, 1000, 1000);
 
         WifiManager wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
-        _wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL , "DerpCastWifiLock");
+        _wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "DerpCastWifiLock");
 
         _deviceAdapter = new DeviceAdapter(MainActivity.this);
         _deviceAdapter.setDeviceAddedListener(new DeviceAdapter.DeviceAddedListener() {
@@ -214,6 +214,17 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             .registerReceiver(_broadcastReceiver, new IntentFilter(Intent.ACTION_MEDIA_BUTTON));
 
         loadMedia();
+    }
+
+    @Override
+    protected void onPause() {
+        DiscoveryManager.getInstance().stop();
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 
     @Override
@@ -386,7 +397,8 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         String pageTitle = ((TextView)findViewById(R.id.title_text_view)).getText().toString();
         String imageUrl = mediaInfo.format.startsWith("video/") ? MEDIA_VIDEO_ART_URL : MEDIA_LOGO_URL;
 
-        mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, pageTitle, mediaInfo.title, imageUrl, false, new MediaPlayer.LaunchListener() {
+        mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, pageTitle,
+                mediaInfo.title, imageUrl, false, new MediaPlayer.LaunchListener() {
             @Override
             public void onSuccess(MediaPlayer.MediaLaunchObject object) {
                 _playRequested = false;
@@ -409,7 +421,8 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             }
         }
 
-        startService(new Intent(RemoteControlService.ACTION_PLAY, null, getApplicationContext(), RemoteControlService.class));
+        startService(new Intent(RemoteControlService.ACTION_PLAY,
+                null, getApplicationContext(), RemoteControlService.class));
     }
 
     private void pause() {
@@ -420,7 +433,8 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             }
         }
 
-        startService(new Intent(RemoteControlService.ACTION_PAUSE, null, getApplicationContext(), RemoteControlService.class));
+        startService(new Intent(RemoteControlService.ACTION_PAUSE,
+                null, getApplicationContext(), RemoteControlService.class));
     }
 
     private void stop() {
@@ -431,7 +445,8 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             }
         }
 
-        startService(new Intent(RemoteControlService.ACTION_STOP, null, getApplicationContext(), RemoteControlService.class));
+        startService(new Intent(RemoteControlService.ACTION_REMOVE,
+                null, getApplicationContext(), RemoteControlService.class));
 
         if (_wifiLock.isHeld()) _wifiLock.release();
         if (!_playRequested) {

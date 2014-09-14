@@ -16,7 +16,7 @@ public class RemoteControlService extends Service {
     public static final String ACTION_SETUP = "com.mvt.derpcast.action.SETUP";
     public static final String ACTION_PLAY = "com.mvt.derpcast.action.PLAY";
     public static final String ACTION_PAUSE = "com.mvt.derpcast.action.PAUSE";
-    public static final String ACTION_STOP = "com.mvt.derpcast.action.STOP";
+    public static final String ACTION_REMOVE = "com.mvt.derpcast.action.REMOVE";
     public static final int PLAY_NOTIFICATION = 1;
     private static RemoteControlClient _remoteControlClient;
 
@@ -38,16 +38,16 @@ public class RemoteControlService extends Service {
                 Notification notification = getNotification(context, title, description);
                 startForeground(PLAY_NOTIFICATION, notification);
             }
+            else if (ACTION_REMOVE.equals(action)) {
+                Context context = getApplicationContext();
+                removeLockScreenControls(context);
+                stopForeground(true);
+            }
             else if (ACTION_PLAY.equals(action)) {
                 _remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PLAYING);
             }
             else if (ACTION_PAUSE.equals(action)) {
                 _remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PAUSED);
-            }
-            else if (ACTION_STOP.equals(action)) {
-                Context context = getApplicationContext();
-                removeLockScreenControls(context);
-                stopForeground(true);
             }
         }
 
