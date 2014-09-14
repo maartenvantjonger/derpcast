@@ -107,7 +107,7 @@ public class MediaScraper {
 
                         try {
                             mediaInfo.size = Long.parseLong(rawHeaders.get("Content-Length"));
-                        } catch (NumberFormatException e) {}
+                        } catch (NumberFormatException e) { e.printStackTrace(); }
 
                         listener.mediaFound(mediaInfo);
                     }
@@ -141,7 +141,7 @@ public class MediaScraper {
                         "://" + baseUrl.getAuthority() + baseUrl.getPath() + url;
                 }
             }
-            catch (MalformedURLException e) {}
+            catch (MalformedURLException e) { e.printStackTrace(); }
         }
 
         return absoluteUrl;

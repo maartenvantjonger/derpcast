@@ -1,13 +1,11 @@
 package com.mvt.derpcast;
 
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
@@ -22,6 +20,7 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TabHost;
+import android.widget.TabWidget;
 import android.widget.TextView;
 
 import com.connectsdk.device.ConnectableDevice;
@@ -48,12 +47,13 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     private DeviceAdapter _deviceAdapter;
     private MediaAdapter _videoAdapter;
     private MediaAdapter _audioAdapter;
+    private TabHost _tabHost;
     private long _mediaDuration;
     private boolean _playRequested;
     private BroadcastReceiver _broadcastReceiver;
+    private WifiManager.WifiLock _wifiLock;
     private static final String MEDIA_LOGO_URL = "https://googledrive.com/host/0BzRo13oMy82cbEJRSHM3VEVyUWc/app_logo.png";
     private static final String MEDIA_VIDEO_ART_URL = "https://googledrive.com/host/0BzRo13oMy82cbEJRSHM3VEVyUWc/video_art.png";
-    private static final int PLAY_NOTIFICATION = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,6 +119,9 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             }
         }, 1000, 1000);
 
+        WifiManager wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+        _wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL , "DerpCastWifiLock");
+
         _deviceAdapter = new DeviceAdapter(MainActivity.this);
         _deviceAdapter.setDeviceAddedListener(new DeviceAdapter.DeviceAddedListener() {
             @Override
@@ -170,6 +173,11 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                     }
                 } else {
                     _videoAdapter.setPlayingMediaInfo(mediaInfo);
+                    _audioAdapter.setPlayingMediaInfo(mediaInfo);
+
+                    View tabIndicator = _tabHost.getTabWidget().getChildTabViewAt(_tabHost.getCurrentTab());
+                    tabIndicator.findViewById(R.id.playing_image_view).setVisibility(View.VISIBLE);
+
                     playMedia();
                 }
             }
@@ -212,6 +220,8 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     protected void onDestroy() {
         LocalBroadcastManager.getInstance(MainActivity.this).unregisterReceiver(_broadcastReceiver);
         DiscoveryManager.destroy();
+        if (_wifiLock.isHeld()) _wifiLock.release();
+
         super.onDestroy();
     }
 
@@ -227,24 +237,24 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
     }
 
     private void setupTabs() {
-        TabHost tabHost = (TabHost)findViewById(android.R.id.tabhost);
-        tabHost.setup();
+        _tabHost = (TabHost)findViewById(android.R.id.tabhost);
+        _tabHost.setup();
 
-        View videoTabIndicator = getLayoutInflater().inflate(R.layout.orangeholo_tab_indicator_holo, tabHost.getTabWidget(), false);
+        View videoTabIndicator = getLayoutInflater().inflate(R.layout.media_tab_indicator, _tabHost.getTabWidget(), false);
         TextView videoTitle = (TextView)videoTabIndicator.findViewById(android.R.id.title);
         videoTitle.setText("VIDEO");
 
-        TabHost.TabSpec videoTab = tabHost.newTabSpec("Video").setContent(R.id.video_scroll_view);
+        TabHost.TabSpec videoTab = _tabHost.newTabSpec("Video").setContent(R.id.video_scroll_view);
         videoTab.setIndicator(videoTabIndicator);
-        tabHost.addTab(videoTab);
+        _tabHost.addTab(videoTab);
 
-        View audioTabIndicator = getLayoutInflater().inflate(R.layout.orangeholo_tab_indicator_holo, tabHost.getTabWidget(), false);
+        View audioTabIndicator = getLayoutInflater().inflate(R.layout.media_tab_indicator, _tabHost.getTabWidget(), false);
         TextView audioTitle = (TextView) audioTabIndicator.findViewById(android.R.id.title);
         audioTitle.setText("AUDIO");
 
-        TabHost.TabSpec audioTab = tabHost.newTabSpec("Audio").setContent(R.id.audio_scroll_view);
+        TabHost.TabSpec audioTab = _tabHost.newTabSpec("Audio").setContent(R.id.audio_scroll_view);
         audioTab.setIndicator(audioTabIndicator);
-        tabHost.addTab(audioTab);
+        _tabHost.addTab(audioTab);
     }
 
     private void loadMedia() {
@@ -258,7 +268,10 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             pageUrl = intent.getStringExtra(Intent.EXTRA_TEXT);
         }
 
-        if (pageUrl != null) {
+        if (pageUrl == null) {
+            findViewById(R.id.usage_text_view).setVisibility(View.VISIBLE);
+        }
+        else{
             _videoAdapter.clear();
             _audioAdapter.clear();
 
@@ -279,8 +292,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 public void mediaFound(MediaInfo mediaInfo) {
                     if (mediaInfo.format.startsWith("video/")) {
                         _videoAdapter.addMediaInfo(mediaInfo);
-                    }
-                    else if (mediaInfo.format.startsWith("audio/")) {
+                    } else if (mediaInfo.format.startsWith("audio/")) {
                         _audioAdapter.addMediaInfo(mediaInfo);
                     }
                 }
@@ -304,25 +316,21 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (_refreshItem != null)  _refreshItem.setVisible(true);
+                            if (_refreshItem != null) _refreshItem.setVisible(true);
+
+                            boolean videoFound =  _videoAdapter.getCount() > 0;
+                            boolean audioFound =  _audioAdapter.getCount() > 0;
 
                             findViewById(R.id.media_progress_bar).setVisibility(View.GONE);
-                            findViewById(android.R.id.tabhost).setVisibility(View.VISIBLE);
+                            findViewById(R.id.no_video_text_view).setVisibility(videoFound ? View.GONE : View.VISIBLE);
+                            findViewById(R.id.no_audio_text_view).setVisibility(audioFound ? View.GONE : View.VISIBLE);
 
-                            if (mediaFound == 0) {
-                                TextView errorTextView = (TextView) findViewById(R.id.error_text_view);
-                                errorTextView.setText(R.string.no_media);
-                                errorTextView.setVisibility(View.VISIBLE);
-                            }
+                            _tabHost.setCurrentTab(!videoFound && audioFound ? 1 : 0);
+                            _tabHost.setVisibility(View.VISIBLE);
                         }
                     });
                 }
             });
-        }
-        else {
-            TextView errorTextView = (TextView) findViewById(R.id.error_text_view);
-            errorTextView.setText(R.string.usage);
-            errorTextView.setVisibility(View.VISIBLE);
         }
     }
 
@@ -331,12 +339,9 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         long seconds = totalSeconds % 60;
         long minutes = (totalSeconds / 60) % 60;
         long hours = totalSeconds / 3600;
-
-        String timeString = hours > 0
+        return hours > 0
                 ? String.format("%d:%02d:%02d", hours, minutes, seconds)
                 : String.format("%02d:%02d", minutes, seconds);
-
-        return timeString;
     }
 
     private void playMedia() {
@@ -352,7 +357,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
                 intent.putExtra("mediaUrl", mediaInfo.url);
                 startActivity(intent);
 
-                _videoAdapter.setPlayingMediaInfo(null);
+                removePlayingIndicator();
             }
             else {
                 playMedia(_device.getMediaPlayer(), mediaInfo);
@@ -360,11 +365,23 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         }
     }
 
+    private void removePlayingIndicator() {
+        _videoAdapter.setPlayingMediaInfo(null);
+        _audioAdapter.setPlayingMediaInfo(null);
+
+        TabWidget tabWidget = _tabHost.getTabWidget();
+        for (int tabIndex = 0; tabIndex < tabWidget.getTabCount(); tabIndex++ ) {
+            View tabIndicator = tabWidget.getChildTabViewAt(tabIndex);
+            tabIndicator.findViewById(R.id.playing_image_view).setVisibility(View.GONE);
+        }
+    }
+
     private void playMedia(MediaPlayer mediaPlayer, MediaInfo mediaInfo) {
         _playRequested = true;
 
         findViewById(R.id.media_controller).setVisibility(View.VISIBLE);
-        setupNotification();
+        setupRemoteControlService();
+        if (!_wifiLock.isHeld()) _wifiLock.acquire();
 
         String pageTitle = ((TextView)findViewById(R.id.title_text_view)).getText().toString();
         String imageUrl = mediaInfo.format.startsWith("video/") ? MEDIA_VIDEO_ART_URL : MEDIA_LOGO_URL;
@@ -392,7 +409,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             }
         }
 
-        startService(new Intent(RemoteControlService.ACTION_PLAY, null, MainActivity.this, RemoteControlService.class));
+        startService(new Intent(RemoteControlService.ACTION_PLAY, null, getApplicationContext(), RemoteControlService.class));
     }
 
     private void pause() {
@@ -403,7 +420,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             }
         }
 
-        startService(new Intent(RemoteControlService.ACTION_PAUSE, null, MainActivity.this, RemoteControlService.class));
+        startService(new Intent(RemoteControlService.ACTION_PAUSE, null, getApplicationContext(), RemoteControlService.class));
     }
 
     private void stop() {
@@ -414,10 +431,11 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             }
         }
 
-        removeNotification();
+        startService(new Intent(RemoteControlService.ACTION_STOP, null, getApplicationContext(), RemoteControlService.class));
 
+        if (_wifiLock.isHeld()) _wifiLock.release();
         if (!_playRequested) {
-            _videoAdapter.setPlayingMediaInfo(null);
+            removePlayingIndicator();
         }
 
         findViewById(R.id.seek_bar_layout).setVisibility(View.GONE);
@@ -426,8 +444,9 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
 
     private void setupMediaController() {
         if (_device != null &&
-                _device.hasCapability(MediaControl.Seek) &&
-                _device.hasCapability(MediaControl.Duration)) {
+            _device.hasCapability(MediaControl.Seek) &&
+            _device.hasCapability(MediaControl.Duration)) {
+
             MediaControl mediaControl = _device.getMediaControl();
             if (mediaControl != null) {
                 mediaControl.getDuration(new MediaControl.DurationListener() {
@@ -453,37 +472,15 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         }
     }
 
-    private void setupNotification() {
+    private void setupRemoteControlService() {
         MediaInfo mediaInfo = _videoAdapter.getPlayingMedia();
         if (mediaInfo != null) {
-            Context applicationContext = getApplicationContext();
-            String pageTitle = ((TextView) findViewById(R.id.title_text_view)).getText().toString();
-            Intent intent = new Intent(RemoteControlService.ACTION_PLAY, null, applicationContext, RemoteControlService.class);
-            intent.putExtra("title", pageTitle);
+            TextView titleTextView = (TextView)findViewById(R.id.title_text_view);
+            Intent intent = new Intent(RemoteControlService.ACTION_SETUP, null, getApplicationContext(), RemoteControlService.class);
+            intent.putExtra("title", titleTextView.getText().toString());
             intent.putExtra("description", mediaInfo.title);
             startService(intent);
-
-            Intent mainActivityIntent = new Intent(applicationContext, MainActivity.class);
-            mainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            PendingIntent contentIntent = PendingIntent.getActivity(applicationContext, 0, mainActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-            Notification notification = new Notification.Builder(applicationContext)
-                .setContentTitle(pageTitle)
-                .setContentText(mediaInfo.title)
-                .setSmallIcon(R.drawable.main_icon)
-                .setContentIntent(contentIntent)
-                .build();
-
-            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            notificationManager.notify(PLAY_NOTIFICATION, notification);
         }
-    }
-
-    private void removeNotification() {
-        stopService(new Intent(MainActivity.this, RemoteControlService.class));
-
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancel(PLAY_NOTIFICATION);
     }
 
     private void getPlayerPosition() {
@@ -520,6 +517,11 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         getMenuInflater().inflate(R.menu.menu, menu);
         _connectItem = menu.findItem(R.id.action_connect);
         _refreshItem = menu.findItem(R.id.action_refresh);
+
+        if (!findViewById(R.id.usage_text_view).isShown()) {
+            _refreshItem.setVisible(true);
+        }
+
         return true;
     }
 
@@ -591,8 +593,6 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
             case PIN_CODE:
                 PairingDialog dialog = new PairingDialog(MainActivity.this, _device);
                 dialog.getPairingDialog("Enter pairing code").show();
-                break;
-            default:
                 break;
         }
     }
