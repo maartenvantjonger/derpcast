@@ -44,7 +44,7 @@
         android:orientation="horizontal"
         android:visibility="gone" >
 
-        <TextView android:id="@+id/time_current"
+        <TextView android:id="@+id/current_time_text_view"
             android:textSize="14sp"
             android:textStyle="bold"
             android:paddingTop="4dip"
@@ -63,7 +63,7 @@
             android:layout_height="32dip"
             android:max="1000" />
 
-        <TextView android:id="@+id/time"
+        <TextView android:id="@+id/duration_text_view"
             android:textSize="14sp"
             android:textStyle="bold"
             android:paddingTop="4dip"

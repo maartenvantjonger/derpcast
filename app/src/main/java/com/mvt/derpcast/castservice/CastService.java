@@ -17,7 +17,6 @@ import com.connectsdk.service.capability.MediaPlayer;
 import com.connectsdk.service.command.ServiceCommandError;
 import com.mvt.derpcast.R;
 import com.mvt.derpcast.activities.MainActivity;
-import com.mvt.derpcast.activities.NewMainActivity;
 import com.mvt.derpcast.media.MediaInfo;
 
 public class CastService extends IntentService {
@@ -33,7 +32,7 @@ public class CastService extends IntentService {
 
     private CastServiceBinder _castServiceBinder;
     private RemoteControlClient _remoteControlClient;
-    private NewMainActivity _mainActivity;
+    private MainActivity _mainActivity;
     private BroadcastReceiver _broadcastReceiver;
     private WifiManager.WifiLock _wifiLock;
 
@@ -136,7 +135,7 @@ public class CastService extends IntentService {
         return notificationBuilder.build();
     }
 
-    public void setMainActivity(NewMainActivity mainActivity) {
+    public void setMainActivity(MainActivity mainActivity) {
         _mainActivity = mainActivity;
     }
 
