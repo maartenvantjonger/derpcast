@@ -1,28 +1,45 @@
-package com.mvt.derpcast;
+package com.mvt.derpcast.castservice;
 
+import android.app.IntentService;
 import android.app.Notification;
 import android.app.PendingIntent;
-import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaMetadataRetriever;
 import android.media.RemoteControlClient;
+import android.net.wifi.WifiManager;
 import android.os.IBinder;
 
-public class RemoteControlService extends Service {
+import com.connectsdk.service.capability.MediaPlayer;
+import com.connectsdk.service.command.ServiceCommandError;
+import com.mvt.derpcast.R;
+import com.mvt.derpcast.activities.MainActivity;
+import com.mvt.derpcast.activities.NewMainActivity;
+import com.mvt.derpcast.media.MediaInfo;
+
+public class CastService extends IntentService {
 
     public static final String ACTION_SETUP = "com.mvt.derpcast.action.SETUP";
     public static final String ACTION_PLAY = "com.mvt.derpcast.action.PLAY";
     public static final String ACTION_PAUSE = "com.mvt.derpcast.action.PAUSE";
     public static final String ACTION_REMOVE = "com.mvt.derpcast.action.REMOVE";
     public static final int PLAY_NOTIFICATION = 1;
-    private static RemoteControlClient _remoteControlClient;
 
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
+    private static final String MEDIA_LOGO_URL = "https://googledrive.com/host/0BzRo13oMy82cbEJRSHM3VEVyUWc/app_logo.png";
+    private static final String MEDIA_VIDEO_ART_URL = "https://googledrive.com/host/0BzRo13oMy82cbEJRSHM3VEVyUWc/video_art.png";
+
+    private CastServiceBinder _castServiceBinder;
+    private RemoteControlClient _remoteControlClient;
+    private NewMainActivity _mainActivity;
+    private BroadcastReceiver _broadcastReceiver;
+    private WifiManager.WifiLock _wifiLock;
+
+    public CastService(String name) {
+        super(name);
+        _castServiceBinder = new CastServiceBinder(CastService.this);
     }
 
     @Override
@@ -52,6 +69,16 @@ public class RemoteControlService extends Service {
         }
 
         return START_NOT_STICKY;
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return _castServiceBinder;
+    }
+
+    @Override
+    protected void onHandleIntent(Intent intent) {
+
     }
 
     @Override
@@ -107,5 +134,34 @@ public class RemoteControlService extends Service {
                 .setOngoing(true);
 
         return notificationBuilder.build();
+    }
+
+    public void setMainActivity(NewMainActivity mainActivity) {
+        _mainActivity = mainActivity;
+    }
+
+    public void play(MediaPlayer mediaPlayer, MediaInfo mediaInfo, String title) {
+        WifiManager wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+        _wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "DerpCastWifiLock");
+
+        String imageUrl = mediaInfo.format.startsWith("video/") ? MEDIA_VIDEO_ART_URL : MEDIA_LOGO_URL;
+        mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, title,
+                mediaInfo.title, imageUrl, false, new MediaPlayer.LaunchListener() {
+                    @Override
+                    public void onSuccess(MediaPlayer.MediaLaunchObject object) {
+
+                    }
+
+                    @Override
+                    public void onError(ServiceCommandError error) {
+                        error.printStackTrace();
+                    }
+                });
+    }
+
+    public void stop () {
+        if (_wifiLock.isHeld()) {
+            _wifiLock.release();
+        }
     }
 }

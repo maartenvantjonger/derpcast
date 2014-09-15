@@ -1,4 +1,4 @@
-package com.mvt.derpcast;
+package com.mvt.derpcast.castservice;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

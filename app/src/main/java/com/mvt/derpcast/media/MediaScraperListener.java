@@ -1,4 +1,4 @@
-package com.mvt.derpcast;
+package com.mvt.derpcast.media;
 
 public interface MediaScraperListener {
     void mediaFound(MediaInfo mediaInfo);

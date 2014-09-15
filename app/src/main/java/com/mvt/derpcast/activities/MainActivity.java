@@ -1,4 +1,4 @@
-package com.mvt.derpcast;
+package com.mvt.derpcast.activities;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -32,6 +32,15 @@ import com.connectsdk.service.capability.MediaControl;
 import com.connectsdk.service.capability.MediaPlayer;
 import com.connectsdk.service.capability.VolumeControl;
 import com.connectsdk.service.command.ServiceCommandError;
+import com.mvt.derpcast.R;
+import com.mvt.derpcast.castservice.RemoteControlService;
+import com.mvt.derpcast.device.DeviceAdapter;
+import com.mvt.derpcast.device.DeviceAddedListener;
+import com.mvt.derpcast.device.LocalDevice;
+import com.mvt.derpcast.media.MediaAdapter;
+import com.mvt.derpcast.media.MediaInfo;
+import com.mvt.derpcast.media.MediaScraper;
+import com.mvt.derpcast.media.MediaScraperListener;
 
 import java.util.HashMap;
 import java.util.List;
@@ -123,7 +132,7 @@ public class MainActivity extends ActionBarActivity implements ConnectableDevice
         _wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "DerpCastWifiLock");
 
         _deviceAdapter = new DeviceAdapter(MainActivity.this);
-        _deviceAdapter.setDeviceAddedListener(new DeviceAdapter.DeviceAddedListener() {
+        _deviceAdapter.setDeviceAddedListener(new DeviceAddedListener() {
             @Override
             public void onDeviceAdded(final ConnectableDevice device) {
                 if (_device == null) {

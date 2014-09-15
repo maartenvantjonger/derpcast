@@ -1,4 +1,4 @@
-package com.mvt.derpcast;
+package com.mvt.derpcast.activities;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -10,6 +10,8 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.widget.MediaController;
 import android.widget.VideoView;
+
+import com.mvt.derpcast.R;
 
 public class MediaPlayerActivity extends Activity {
     private View _decorView;

@@ -1,4 +1,4 @@
-package com.mvt.derpcast;
+package com.mvt.derpcast.device;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -21,16 +21,13 @@ import com.connectsdk.service.RokuService;
 import com.connectsdk.service.WebOSTVService;
 import com.connectsdk.service.capability.MediaPlayer;
 import com.connectsdk.service.command.ServiceCommandError;
+import com.mvt.derpcast.R;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
 public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListener {
-
-    interface DeviceAddedListener {
-        public void onDeviceAdded(ConnectableDevice device);
-    }
 
     private final String TAG = "DeviceAdapter";
     private List<ConnectableDevice> _devices = new ArrayList<ConnectableDevice>();

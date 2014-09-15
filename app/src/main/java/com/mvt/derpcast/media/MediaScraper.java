@@ -1,4 +1,4 @@
-package com.mvt.derpcast;
+package com.mvt.derpcast.media;
 
 import android.content.Context;
 import android.text.TextUtils;
