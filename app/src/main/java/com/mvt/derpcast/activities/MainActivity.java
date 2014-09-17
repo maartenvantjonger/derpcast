@@ -10,6 +10,7 @@ import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -34,7 +35,6 @@ import com.connectsdk.service.command.ServiceCommandError;
 import com.mvt.derpcast.R;
 import com.mvt.derpcast.castservice.CastService;
 import com.mvt.derpcast.castservice.CastServiceBinder;
-import com.mvt.derpcast.castservice.RemoteControlService;
 import com.mvt.derpcast.device.DeviceAdapter;
 import com.mvt.derpcast.device.DeviceAddedListener;
 import com.mvt.derpcast.device.LocalDevice;
@@ -83,6 +83,7 @@ public class MainActivity extends ActionBarActivity {
         setContentView(R.layout.activity_main);
         setupViews();
 
+        _timer = new Timer();
         _deviceListener = new ConnectableDeviceListener() {
             @Override
             public void onDeviceReady(ConnectableDevice device) {
@@ -91,33 +92,8 @@ public class MainActivity extends ActionBarActivity {
                     _connectItem.setTitle(device.getModelName());
                 }
 
-                if (device.hasCapability(MediaControl.PlayState_Subscribe)) {
-                    MediaControl mediaControl = device.getMediaControl();
-                    if (mediaControl != null) {
-                        mediaControl.subscribePlayState(new MediaControl.PlayStateListener() {
-                            @Override
-                            public void onSuccess(final MediaControl.PlayStateStatus playState) {
-                                if (playState == MediaControl.PlayStateStatus.Finished ||
-                                    playState == MediaControl.PlayStateStatus.Idle ||
-                                    playState == MediaControl.PlayStateStatus.Unknown) {
-
-                                    stop();
-                                }
-                                else if (!_mediaController.isShown()) {
-                                    _mediaController.setVisibility(View.VISIBLE);
-                                }
-                            }
-
-                            @Override
-                            public void onError(ServiceCommandError error) {
-                                error.printStackTrace();
-                            }
-                        });
-                    }
-                }
-
                 _deviceAdapter.notifyDataSetChanged();
-                play();
+                play(_videoAdapter.getPlayingMedia()); // Play media that may be queued
             }
 
             @Override
@@ -142,8 +118,6 @@ public class MainActivity extends ActionBarActivity {
             }
         };
 
-        _timer = new Timer();
-
         loadMedia();
     }
 
@@ -159,18 +133,14 @@ public class MainActivity extends ActionBarActivity {
                 _castService.setLaunchListener(new MediaPlayer.LaunchListener() {
                     @Override
                     public void onSuccess(final MediaPlayer.MediaLaunchObject mediaLaunchObject) {
-                        _timer.schedule(new TimerTask() {
-                            @Override
-                            public void run() {
-                                getPlayerPosition(mediaLaunchObject.mediaControl);
-                            }
-                        }, 1000, 1000);
-
-                        getMediaDuration(mediaLaunchObject.mediaControl);
+                        _playRequested = false;
+                        showMediaControls(mediaLaunchObject.mediaControl);
+                        setMediaIndicator(_castService.getMediaInfo());
                     }
 
                     @Override
                     public void onError(ServiceCommandError error) {
+                        _playRequested = false;
                         error.printStackTrace();
                     }
                 });
@@ -182,8 +152,11 @@ public class MainActivity extends ActionBarActivity {
             }
         };
 
-        Intent intent = new Intent(this, CastService.class);
-        bindService(intent, _serviceConnection, Context.BIND_AUTO_CREATE);
+        Intent startIntent = new Intent(CastService.ACTION_START, null, getApplicationContext(), CastService.class);
+        startService(startIntent);
+
+        Intent bindIntent = new Intent(MainActivity.this, CastService.class);
+        bindService(bindIntent, _serviceConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
@@ -200,8 +173,12 @@ public class MainActivity extends ActionBarActivity {
 
     @Override
     protected void onDestroy() {
-        DiscoveryManager.destroy();
+        if (_castService != null) {
+            _castService = null;
+            unbindService(_serviceConnection);
+        }
 
+        DiscoveryManager.destroy();
         super.onDestroy();
     }
 
@@ -347,13 +324,7 @@ public class MainActivity extends ActionBarActivity {
                         stop();
                     }
                 } else {
-                    _videoAdapter.setPlayingMediaInfo(mediaInfo);
-                    _audioAdapter.setPlayingMediaInfo(mediaInfo);
-
-                    View tabIndicator = _tabHost.getTabWidget().getChildTabViewAt(_tabHost.getCurrentTab());
-                    tabIndicator.findViewById(R.id.playing_image_view).setVisibility(View.VISIBLE);
-
-                    play();
+                    play(mediaInfo);
                 }
             }
         };
@@ -506,52 +477,54 @@ public class MainActivity extends ActionBarActivity {
                 : String.format("%02d:%02d", minutes, seconds);
     }
 
-    private void play() {
+    private void play(MediaInfo mediaInfo) {
+        setMediaIndicator(mediaInfo);
+
         if (_device == null) {
             toggleDeviceMenu(true);
             return;
         }
 
-        final MediaInfo mediaInfo = _videoAdapter.getPlayingMedia();
         if (mediaInfo != null) {
             if (_device instanceof LocalDevice) {
                 Intent intent = new Intent(MainActivity.this, MediaPlayerActivity.class);
                 intent.putExtra("mediaUrl", mediaInfo.url);
                 startActivity(intent);
-                removePlayingIndicator();
+                setMediaIndicator(null);
             }
             else {
                 _playRequested = true;
-                _mediaController.setVisibility(View.VISIBLE);
-
-                Intent intent = new Intent(CastService.ACTION_START, null, getApplicationContext(), RemoteControlService.class);
-                startService(intent);
-
                 String pageTitle = _titleTextView.getText().toString();
                 _castService.play(_device, mediaInfo, pageTitle);
+                showMediaControls(_device.getMediaControl());
             }
         }
     }
 
     private void stop() {
-        _castService.stop();
-
         if (!_playRequested) {
-            removePlayingIndicator();
+            _seekBarLayout.setVisibility(View.GONE);
+            _mediaController.setVisibility(View.GONE);
+            _castService.stop();
+            setMediaIndicator(null);
         }
-
-        _seekBarLayout.setVisibility(View.GONE);
-        _mediaController.setVisibility(View.GONE);
     }
 
-    private void removePlayingIndicator() {
-        _videoAdapter.setPlayingMediaInfo(null);
-        _audioAdapter.setPlayingMediaInfo(null);
+    private void setMediaIndicator(MediaInfo mediaInfo) {
+        _videoAdapter.setPlayingMediaInfo(mediaInfo);
+        _audioAdapter.setPlayingMediaInfo(mediaInfo);
 
         TabWidget tabWidget = _tabHost.getTabWidget();
-        for (int tabIndex = 0; tabIndex < tabWidget.getTabCount(); tabIndex++ ) {
+        if (mediaInfo != null) {
+            int tabIndex = mediaInfo.format.startsWith("video/") ? 0 : 1;
             View tabIndicator = tabWidget.getChildTabViewAt(tabIndex);
-            tabIndicator.findViewById(R.id.playing_image_view).setVisibility(View.GONE);
+            tabIndicator.findViewById(R.id.playing_image_view).setVisibility(View.VISIBLE);
+        }
+        else {
+            for (int tabIndex = 0; tabIndex < tabWidget.getTabCount(); tabIndex++ ) {
+                View tabIndicator = tabWidget.getChildTabViewAt(tabIndex);
+                tabIndicator.findViewById(R.id.playing_image_view).setVisibility(View.GONE);
+            }
         }
     }
 
@@ -559,9 +532,49 @@ public class MainActivity extends ActionBarActivity {
         _deviceLayout.setVisibility(_deviceLayout.isShown() && !keepOpen ? View.GONE : View.VISIBLE);
     }
 
+    private void showMediaControls(final MediaControl mediaControl) {
+        _seekBarLayout.setVisibility(View.GONE);
+        _mediaController.setVisibility(View.VISIBLE);
+        _currentTimeTextView.setText(R.string.zero_time);
+        _durationTextView.setText(R.string.zero_time);
+        _timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                getPlayerPosition(mediaControl);
+            }
+        }, 1000, 1000);
+
+        getMediaDuration(mediaControl);
+    }
+
     private void connectDevice(ConnectableDevice device) {
         _device = device;
-        _device.addListener(_deviceListener);
+
+        if (device.hasCapability(MediaControl.PlayState_Subscribe)) {
+            final MediaControl mediaControl = device.getMediaControl();
+            mediaControl.subscribePlayState(new MediaControl.PlayStateListener() {
+                @Override
+                public void onSuccess(final MediaControl.PlayStateStatus playState) {
+                    Log.e("DerpCast", "play state: " + playState.name());
+
+                    if (playState == MediaControl.PlayStateStatus.Finished ||
+                            playState == MediaControl.PlayStateStatus.Idle ||
+                            playState == MediaControl.PlayStateStatus.Unknown) {
+                        //stop();
+                    }
+                    else if (!_mediaController.isShown()) {
+                        showMediaControls(mediaControl);
+                    }
+                }
+
+                @Override
+                public void onError(ServiceCommandError error) {
+                    error.printStackTrace();
+                }
+            });
+        }
+
+        device.addListener(_deviceListener);
         _device.connect();
     }
 
@@ -579,21 +592,20 @@ public class MainActivity extends ActionBarActivity {
         }
     }
     private void getMediaDuration(MediaControl mediaControl) {
-        if (_device.hasCapability(MediaControl.Seek) && _device.hasCapability(MediaControl.Duration)) {
-            mediaControl.getDuration(new MediaControl.DurationListener() {
-                @Override
-                public void onSuccess(Long duration) {
-                    _mediaDuration = duration;
-                    _currentTimeTextView.setText(stringForTime(0));
-                    _durationTextView.setText(stringForTime(duration));
-                }
+        mediaControl.getDuration(new MediaControl.DurationListener() {
+            @Override
+            public void onSuccess(Long duration) {
+                _mediaDuration = duration;
+                _currentTimeTextView.setText(stringForTime(0));
+                _durationTextView.setText(stringForTime(duration));
+                _seekBarLayout.setVisibility(View.VISIBLE);
+            }
 
-                @Override
-                public void onError(ServiceCommandError error) {
-
-                }
-            });
-        }
+            @Override
+            public void onError(ServiceCommandError error) {
+                error.printStackTrace();
+            }
+        });
     }
 
     private void getPlayerPosition(MediaControl mediaControl) {
@@ -604,7 +616,6 @@ public class MainActivity extends ActionBarActivity {
                     double progress = (position / (double) _mediaDuration) * 1000;
                     _currentTimeTextView.setText(stringForTime(position));
                     _seekBar.setProgress((int) progress);
-                    _seekBarLayout.setVisibility(View.VISIBLE);
                 }
             }
 

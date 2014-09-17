@@ -29,7 +29,6 @@ import java.util.ListIterator;
 
 public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListener {
 
-    private final String TAG = "DeviceAdapter";
     private List<ConnectableDevice> _devices = new ArrayList<ConnectableDevice>();
     private DeviceAddedListener _deviceAddedListener;
     private final Object _syncRoot = new Object();

@@ -221,6 +221,7 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
 				} catch (Exception e) {
 					// NOTE: older versions of Play Services required a check for IOException
 					Log.w("Connect SDK", "Unable to stop");
+                    e.printStackTrace();
 				}
 			}
 		};

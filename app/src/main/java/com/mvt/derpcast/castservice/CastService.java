@@ -19,6 +19,7 @@ import android.view.KeyEvent;
 import com.connectsdk.device.ConnectableDevice;
 import com.connectsdk.service.capability.MediaPlayer;
 import com.connectsdk.service.capability.VolumeControl;
+import com.connectsdk.service.command.ServiceCommandError;
 import com.mvt.derpcast.R;
 import com.mvt.derpcast.activities.MainActivity;
 import com.mvt.derpcast.media.MediaInfo;
@@ -37,11 +38,13 @@ public class CastService extends IntentService {
     private BroadcastReceiver _broadcastReceiver;
     private WifiManager.WifiLock _wifiLock;
     private ConnectableDevice _device;
-
+    private MediaInfo _mediaInfo;
+    private MediaPlayer.MediaLaunchObject _mediaLaunchObject;
     private MediaPlayer.LaunchListener _launchListener;
 
-    public CastService(String name) {
-        super(name);
+    public CastService() {
+        super("CastService");
+
         _castServiceBinder = new CastServiceBinder(CastService.this);
         _broadcastReceiver = new BroadcastReceiver() {
             @Override
@@ -67,17 +70,10 @@ public class CastService extends IntentService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null) {
-            String action = intent.getAction();
+        WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        _wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "DerpCastWifiLock");
 
-            if (ACTION_STOP.equals(action)) {
-                Context context = getApplicationContext();
-                removeLockScreenControls(context);
-                stopForeground(true);
-            }
-        }
-
-        return START_NOT_STICKY;
+        return START_STICKY;
     }
 
     @Override
@@ -86,34 +82,63 @@ public class CastService extends IntentService {
     }
 
     @Override
-    protected void onHandleIntent(Intent intent) {
+    public boolean onUnbind(Intent intent) {
+        if (_mediaInfo == null) {
+            // Stop service when no clients are bound and no media is playing
+            stopSelf();
+        }
 
+        return super.onUnbind(intent);
+    }
+
+    @Override
+    protected void onHandleIntent(Intent intent) {
     }
 
     @Override
     public void onDestroy() {
+        stop();
         super.onDestroy();
     }
 
-
     public void setLaunchListener(MediaPlayer.LaunchListener launchListener) {
         _launchListener = launchListener;
+        if (_mediaLaunchObject != null) {
+            _launchListener.onSuccess(_mediaLaunchObject);
+        }
     }
 
     public void play(ConnectableDevice device, MediaInfo mediaInfo, String title) {
 
-        if (device == null || device.getMediaControl() == null || device.getMediaPlayer() == null) {
+        if (device == null ||
+                device.getMediaControl() == null ||
+                device.getMediaPlayer() == null ||
+                mediaInfo == null) {
             return;
         }
 
+        _mediaInfo = mediaInfo;
         _device = device;
 
         String imageUrl = mediaInfo.format.startsWith("video/") ? MEDIA_VIDEO_ART_URL : MEDIA_LOGO_URL;
         MediaPlayer mediaPlayer = device.getMediaPlayer();
-        mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, title, mediaInfo.title, imageUrl, false, _launchListener);
+        mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, title, mediaInfo.title, imageUrl, false, new MediaPlayer.LaunchListener() {
+            @Override
+            public void onSuccess(MediaPlayer.MediaLaunchObject mediaLaunchObject) {
+                _mediaLaunchObject = mediaLaunchObject;
+                if (_launchListener != null) {
+                    _launchListener.onSuccess(_mediaLaunchObject);
+                }
+            }
 
-        WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        _wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "DerpCastWifiLock");
+            @Override
+            public void onError(ServiceCommandError error) {
+                _mediaLaunchObject = null;
+                if (_launchListener != null) {
+                    _launchListener.onError(error);
+                }
+            }
+        });
 
         LocalBroadcastManager
                 .getInstance(CastService.this)
@@ -125,16 +150,38 @@ public class CastService extends IntentService {
         startForeground(PLAY_NOTIFICATION, notification);
     }
 
+    public MediaInfo getMediaInfo() {
+        return _mediaInfo;
+    }
 
     public void play() {
-        _remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PLAYING);
+        if (_remoteControlClient != null) {
+            _remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PLAYING);
+        }
+
+        if (_device != null && _device.getMediaControl() != null) {
+            _device.getMediaControl().play(null);
+        }
     }
 
     public void pause() {
-        _remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PAUSED);
+        if (_remoteControlClient != null) {
+            _remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PAUSED);
+        }
+
+        if (_device != null && _device.getMediaControl() != null) {
+            _device.getMediaControl().pause(null);
+        }
     }
 
     public void stop() {
+        _mediaInfo = null;
+        _mediaLaunchObject = null;
+
+        if (_device != null && _device.getMediaControl() != null) {
+            _device.getMediaControl().stop(null);
+        }
+
         if (_wifiLock.isHeld()) {
             _wifiLock.release();
         }
@@ -142,6 +189,8 @@ public class CastService extends IntentService {
         LocalBroadcastManager
                 .getInstance(CastService.this)
                 .unregisterReceiver(_broadcastReceiver);
+        removeLockScreenControls(getApplicationContext());
+        stopForeground(true);
     }
 
     public void changeVolume(int keyCode) {

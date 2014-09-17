@@ -51,7 +51,7 @@
         </activity>
 
         <service
-            android:name=".castservice.RemoteControlService"
+            android:name=".castservice.CastService"
             android:exported="false">
         </service>
 
