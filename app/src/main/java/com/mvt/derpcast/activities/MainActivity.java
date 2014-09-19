@@ -560,7 +560,7 @@ public class MainActivity extends ActionBarActivity {
                     if (playState == MediaControl.PlayStateStatus.Finished ||
                             playState == MediaControl.PlayStateStatus.Idle ||
                             playState == MediaControl.PlayStateStatus.Unknown) {
-                        //stop();
+                        stop();
                     }
                     else if (!_mediaController.isShown()) {
                         showMediaControls(mediaControl);
@@ -595,10 +595,12 @@ public class MainActivity extends ActionBarActivity {
         mediaControl.getDuration(new MediaControl.DurationListener() {
             @Override
             public void onSuccess(Long duration) {
-                _mediaDuration = duration;
-                _currentTimeTextView.setText(stringForTime(0));
-                _durationTextView.setText(stringForTime(duration));
-                _seekBarLayout.setVisibility(View.VISIBLE);
+                if (duration > 0) {
+                    _mediaDuration = duration;
+                    _currentTimeTextView.setText(stringForTime(0));
+                    _durationTextView.setText(stringForTime(duration));
+                    _seekBarLayout.setVisibility(View.VISIBLE);
+                }
             }
 
             @Override
