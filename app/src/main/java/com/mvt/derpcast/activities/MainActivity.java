@@ -93,7 +93,17 @@ public class MainActivity extends ActionBarActivity {
                 }
 
                 _deviceAdapter.notifyDataSetChanged();
-                play(_videoAdapter.getPlayingMedia()); // Play media that may be queued
+
+                MediaInfo mediaInfo = _castService.whatsPlaying(_device);
+                if (mediaInfo != null) {
+                    _playRequested = false;
+                    showMediaControls(device.getMediaControl());
+                    setMediaIndicator(mediaInfo);
+                }
+                else {
+                    // Play media that may be queued
+                    play(_videoAdapter.getPlayingMedia());
+                }
             }
 
             @Override
@@ -134,8 +144,9 @@ public class MainActivity extends ActionBarActivity {
                     @Override
                     public void onSuccess(final MediaPlayer.MediaLaunchObject mediaLaunchObject) {
                         _playRequested = false;
+                        MediaInfo mediaInfo = _castService.whatsPlaying(_device);
+                        setMediaIndicator(mediaInfo);
                         showMediaControls(mediaLaunchObject.mediaControl);
-                        setMediaIndicator(_castService.getMediaInfo());
                     }
 
                     @Override

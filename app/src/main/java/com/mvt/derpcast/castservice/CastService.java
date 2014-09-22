@@ -103,9 +103,6 @@ public class CastService extends IntentService {
 
     public void setLaunchListener(MediaPlayer.LaunchListener launchListener) {
         _launchListener = launchListener;
-        if (_mediaLaunchObject != null) {
-            _launchListener.onSuccess(_mediaLaunchObject);
-        }
     }
 
     public void play(ConnectableDevice device, MediaInfo mediaInfo, String title) {
@@ -150,8 +147,15 @@ public class CastService extends IntentService {
         startForeground(PLAY_NOTIFICATION, notification);
     }
 
-    public MediaInfo getMediaInfo() {
-        return _mediaInfo;
+    public MediaInfo whatsPlaying(ConnectableDevice device) {
+        MediaInfo mediaInfo = null;
+
+        if (device != null && _device != null &&
+            device.getId().equals(_device.getId())) {
+            mediaInfo = _mediaInfo;
+        }
+
+        return mediaInfo;
     }
 
     public void play() {
