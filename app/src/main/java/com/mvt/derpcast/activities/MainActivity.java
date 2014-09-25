@@ -57,7 +57,6 @@ public class MainActivity extends ActionBarActivity {
     private DeviceAdapter _deviceAdapter;
     private MediaAdapter _videoAdapter;
     private MediaAdapter _audioAdapter;
-    private ConnectableDeviceListener _deviceListener;
     private Timer _timer;
 
     private long _mediaDuration;
@@ -87,67 +86,32 @@ public class MainActivity extends ActionBarActivity {
         setupViews();
 
         _timer = new Timer();
-        _deviceListener = new ConnectableDeviceListener() {
-            @Override
-            public void onDeviceReady(ConnectableDevice device) {
-                if (!(device instanceof LocalDevice)) {
-                    _connectItem.setIcon(R.drawable.ic_media_route_on_holo_light);
-                    _connectItem.setTitle(device.getModelName());
-                }
-
-                _deviceAdapter.notifyDataSetChanged();
-
-                MediaInfo mediaInfo = _castService.getPlayingMediaInfo();
-                if (mediaInfo != null) {
-                    _playRequested = false;
-                    showMediaControls(device.getMediaControl());
-                    setMediaIndicator(mediaInfo);
-                }
-                else {
-                    // Play media that may be queued
-                    play(_videoAdapter.getPlayingMedia());
-                }
-            }
-
-            @Override
-            public void onDeviceDisconnected(ConnectableDevice device) {
-                disconnectDevice();
-            }
-
-            @Override
-            public void onPairingRequired(ConnectableDevice device, DeviceService service, DeviceService.PairingType pairingType) {
-                if (DeviceService.PairingType.PIN_CODE.equals(pairingType)) {
-                    PairingDialog dialog = new PairingDialog(MainActivity.this, _device);
-                    dialog.getPairingDialog("Enter pairing code").show();
-                }
-            }
-
-            @Override
-            public void onCapabilityUpdated(ConnectableDevice device, List<String> added, List<String> removed) {}
-
-            @Override
-            public void onConnectionFailed(ConnectableDevice device, ServiceCommandError error) {
-                disconnectDevice();
-            }
-        };
     }
 
     @Override
     protected void onStart() {
         super.onStart();
 
+        Log.i("MainActivity", "onStart");
+
+
         _serviceConnection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName className, IBinder binder) {
+                Log.i("MainActivity", "onServiceConnected: " + className.toString());
+
                 CastServiceBinder castServiceBinder = (CastServiceBinder) binder;
                 _castService = castServiceBinder.getCastService();
                 _castService.setLaunchListener(new MediaPlayer.LaunchListener() {
                     @Override
                     public void onSuccess(final MediaPlayer.MediaLaunchObject mediaLaunchObject) {
                         _playRequested = false;
-                        MediaInfo mediaInfo = _castService.getPlayingMediaInfo();
-                        setMediaIndicator(mediaInfo);
-                        showMediaControls(mediaLaunchObject.mediaControl);
+
+                        if (_castService != null) {
+                            MediaInfo mediaInfo = _castService.getPlayingMediaInfo();
+                            setMediaIndicator(mediaInfo);
+                            showMediaControls(mediaLaunchObject.mediaControl);
+                        }
                     }
 
                     @Override
@@ -165,6 +129,7 @@ public class MainActivity extends ActionBarActivity {
                             String lastDevice = PreferenceManager
                                     .getDefaultSharedPreferences(MainActivity.this)
                                     .getString("lastDevice", null);
+
                             if (device.getId().equals(lastDevice)) {
                                 connectDevice(device);
                             }
@@ -172,29 +137,35 @@ public class MainActivity extends ActionBarActivity {
                     }
                 });
 
+                _videoAdapter = _castService.getVideoAdapter();
+                _audioAdapter = _castService.getAudioAdapter();
+
                 _deviceListView.setAdapter(_deviceAdapter);
+                _videoListView.setAdapter(_videoAdapter);
+                _audioListView.setAdapter(_audioAdapter);
 
                 ConnectableDevice playingDevice = _castService.getPlayingDevice();
-                if (playingDevice != null && _device == null) {
-                    _device = playingDevice;
+                if (playingDevice != null) {
+                    connectDevice(playingDevice);
+                    updateConnectItem();
+                    updateMediaTabs();
+
+                    String title = _castService.getTitle();
+                    _titleTextView.setText(title);
+                    _titleTextView.setVisibility(View.VISIBLE);
+
                     MediaInfo mediaInfo = _castService.getPlayingMediaInfo();
                     setMediaIndicator(mediaInfo);
                     showMediaControls(_device.getMediaControl());
                 }
-
-                _videoAdapter = _castService.getVideoAdapter();
-                _videoListView.setAdapter(_videoAdapter);
-
-                _audioAdapter = _castService.getAudioAdapter();
-                _audioListView.setAdapter(_audioAdapter);
-
-                if (_videoAdapter.getCount() == 0 && _audioAdapter.getCount() == 0) {
+                else {
                     loadMedia();
                 }
             }
 
             @Override
             public void onServiceDisconnected(ComponentName componentName) {
+                Log.i("MainActivity", "onServiceDisconnected");
                 _castService = null;
             }
         };
@@ -213,6 +184,7 @@ public class MainActivity extends ActionBarActivity {
         DiscoveryManager.getInstance().stop();
 
         if (_castService != null) {
+            Log.i("MainActivity", "onStop");
             _castService = null;
             unbindService(_serviceConnection);
         }
@@ -221,6 +193,7 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onDestroy() {
         if (_castService != null) {
+            Log.i("MainActivity", "onDestroy");
             _castService = null;
             unbindService(_serviceConnection);
         }
@@ -266,6 +239,8 @@ public class MainActivity extends ActionBarActivity {
         if (!_usageTextView.isShown()) {
             _refreshItem.setVisible(true);
         }
+
+        updateConnectItem();
 
         return true;
     }
@@ -478,15 +453,8 @@ public class MainActivity extends ActionBarActivity {
                                 _refreshItem.setVisible(true);
                             }
 
-                            boolean videoFound =  _videoAdapter.getCount() > 0;
-                            boolean audioFound =  _audioAdapter.getCount() > 0;
-
                             _mediaProgressBar.setVisibility(View.GONE);
-                            findViewById(R.id.no_video_text_view).setVisibility(videoFound ? View.GONE : View.VISIBLE);
-                            findViewById(R.id.no_audio_text_view).setVisibility(audioFound ? View.GONE : View.VISIBLE);
-
-                            _tabHost.setCurrentTab(!videoFound && audioFound ? 1 : 0);
-                            _tabHost.setVisibility(View.VISIBLE);
+                            updateMediaTabs();
                         }
                     });
                 }
@@ -532,8 +500,11 @@ public class MainActivity extends ActionBarActivity {
         if (!_playRequested) {
             _seekBarLayout.setVisibility(View.GONE);
             _mediaController.setVisibility(View.GONE);
-            _castService.stop();
             setMediaIndicator(null);
+
+            if (_castService != null) {
+                _castService.stop();
+            }
         }
     }
 
@@ -553,6 +524,29 @@ public class MainActivity extends ActionBarActivity {
                 tabIndicator.findViewById(R.id.playing_image_view).setVisibility(View.GONE);
             }
         }
+    }
+
+    private void updateConnectItem() {
+        if (_connectItem != null) {
+            if (_device == null || _device instanceof LocalDevice) {
+                _connectItem.setIcon(R.drawable.ic_media_route_off_holo_light);
+                _connectItem.setTitle(R.string.cast);
+            } else {
+                _connectItem.setIcon(R.drawable.ic_media_route_on_holo_light);
+                _connectItem.setTitle(_device.getModelName());
+            }
+        }
+    }
+
+    private void updateMediaTabs() {
+        boolean videoFound =  _videoAdapter.getCount() > 0;
+        boolean audioFound =  _audioAdapter.getCount() > 0;
+
+        findViewById(R.id.no_video_text_view).setVisibility(videoFound ? View.GONE : View.VISIBLE);
+        findViewById(R.id.no_audio_text_view).setVisibility(audioFound ? View.GONE : View.VISIBLE);
+
+        _tabHost.setCurrentTab(!videoFound && audioFound ? 1 : 0);
+        _tabHost.setVisibility(View.VISIBLE);
     }
 
     private void toggleDeviceMenu(boolean keepOpen) {
@@ -582,7 +576,7 @@ public class MainActivity extends ActionBarActivity {
             mediaControl.subscribePlayState(new MediaControl.PlayStateListener() {
                 @Override
                 public void onSuccess(final MediaControl.PlayStateStatus playState) {
-                    Log.e("DerpCast", "play state: " + playState.name());
+                    Log.i("DerpCast", "play state: " + playState.name());
 
                     if (playState == MediaControl.PlayStateStatus.Finished ||
                             playState == MediaControl.PlayStateStatus.Idle ||
@@ -601,20 +595,62 @@ public class MainActivity extends ActionBarActivity {
             });
         }
 
-        device.addListener(_deviceListener);
-        _device.connect();
+        device.getListeners().clear();
+        device.addListener(new ConnectableDeviceListener() {
+            @Override
+            public void onDeviceReady(ConnectableDevice device) {
+
+                updateConnectItem();
+                _deviceAdapter.notifyDataSetChanged();
+
+                MediaInfo mediaInfo = _castService.getPlayingMediaInfo();
+                if (mediaInfo != null) {
+                    _playRequested = false;
+                    showMediaControls(device.getMediaControl());
+                    setMediaIndicator(mediaInfo);
+                }
+                else {
+                    // Play media that may be queued
+                    play(_videoAdapter.getPlayingMedia());
+                }
+            }
+
+            @Override
+            public void onDeviceDisconnected(ConnectableDevice device) {
+                disconnectDevice();
+            }
+
+            @Override
+            public void onPairingRequired(ConnectableDevice device, DeviceService service, DeviceService.PairingType pairingType) {
+                if (DeviceService.PairingType.PIN_CODE.equals(pairingType)) {
+                    PairingDialog dialog = new PairingDialog(MainActivity.this, _device);
+                    dialog.getPairingDialog("Enter pairing code").show();
+                }
+            }
+
+            @Override
+            public void onCapabilityUpdated(ConnectableDevice device, List<String> added, List<String> removed) {}
+
+            @Override
+            public void onConnectionFailed(ConnectableDevice device, ServiceCommandError error) {
+                disconnectDevice();
+            }
+        });
+
+        if (!device.isConnected()) {
+            _device.connect();
+        }
     }
 
     private void disconnectDevice() {
         if (_device != null) {
             stop();
 
-            _device.removeListener(_deviceListener);
+            _device.getListeners().clear();
             _device.disconnect();
             _device = null;
 
-            _connectItem.setIcon(R.drawable.ic_media_route_off_holo_light);
-            _connectItem.setTitle(R.string.cast);
+            updateConnectItem();
             _deviceAdapter.notifyDataSetChanged();
         }
     }

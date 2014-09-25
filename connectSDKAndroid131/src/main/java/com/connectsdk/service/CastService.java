@@ -91,7 +91,7 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
     CastDevice castDevice;
     RemoteMediaPlayer mMediaPlayer;
     
-	List<URLServiceSubscription<?>> subscriptions;
+	URLServiceSubscription mSubscription;
     
     boolean isConnected = false;
     
@@ -106,8 +106,6 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
 		mCastClientListener = new CastListener();
         mConnectionCallbacks = new ConnectionCallbacks();
         mConnectionFailedListener = new ConnectionFailedListener();
-        
-		subscriptions = new ArrayList<URLServiceSubscription<?>>();
 	}
 
 	@Override
@@ -333,20 +331,18 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
 
             @Override
             public void onStatusUpdated() {
-                if (subscriptions.size() > 0) {
+                if (mSubscription != null) {
 
                     // DerpCast specific
                     MediaStatus mediaStatus = mMediaPlayer.getMediaStatus();
                     if (mediaStatus != null) {
                         PlayStateStatus status = convertPlayerStateToPlayStateStatus(mediaStatus.getPlayerState());
 
-                        for (URLServiceSubscription<?> subscription : subscriptions) {
-                            if (subscription.getTarget().equalsIgnoreCase(PLAY_STATE)) {
-                                for (int i = 0; i < subscription.getListeners().size(); i++) {
-                                    @SuppressWarnings("unchecked")
-                                    ResponseListener<Object> listener = (ResponseListener<Object>) subscription.getListeners().get(i);
-                                    Util.postSuccess(listener, status);
-                                }
+                        if (mSubscription.getTarget().equalsIgnoreCase(PLAY_STATE)) {
+                            for (int i = 0; i < mSubscription.getListeners().size(); i++) {
+                                @SuppressWarnings("unchecked")
+                                ResponseListener<Object> listener = (ResponseListener<Object>) mSubscription.getListeners().get(i);
+                                Util.postSuccess(listener, status);
                             }
                         }
                     }
@@ -917,51 +913,49 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
 
 		@Override
 		public void onVolumeChanged() {
-            if (subscriptions.size() > 0) {
-            	for (URLServiceSubscription<?> subscription: subscriptions) {
-            		if (subscription.getTarget().equalsIgnoreCase(VOLUME)) {
-						for (int i = 0; i < subscription.getListeners().size(); i++) {
-							@SuppressWarnings("unchecked")
-							final ResponseListener<Object> listener = (ResponseListener<Object>) subscription.getListeners().get(i);
-							
-							ConnectionListener connectionListener = new ConnectionListener() {
-								
-								@Override
-								public void onConnected() {
-							        try {
-								        float volume = (float) Cast.CastApi.getVolume(mApiClient);
-								        Util.postSuccess(listener, volume);
-									} catch (IllegalStateException e) {
-										e.printStackTrace();
-									}
-								}
-							};
-							
-							runCommand(connectionListener);
-						}
-            		}
-            		else if (subscription.getTarget().equalsIgnoreCase(MUTE)) {
-						for (int i = 0; i < subscription.getListeners().size(); i++) {
-							@SuppressWarnings("unchecked")
-							final ResponseListener<Object> listener = (ResponseListener<Object>) subscription.getListeners().get(i);
-							
-							ConnectionListener connectionListener = new ConnectionListener() {
-								
-								@Override
-								public void onConnected() {
-							        try {
-										boolean isMute = Cast.CastApi.isMute(mApiClient);
-										Util.postSuccess(listener, isMute);
-									} catch (IllegalStateException e) {
-										e.printStackTrace();
-									}
-								}
-							};
-							
-							runCommand(connectionListener);
-						}
-            		}
-            	}
+            if (mSubscription != null) {
+                if (mSubscription.getTarget().equalsIgnoreCase(VOLUME)) {
+                    for (int i = 0; i < mSubscription.getListeners().size(); i++) {
+                        @SuppressWarnings("unchecked")
+                        final ResponseListener<Object> listener = (ResponseListener<Object>) mSubscription.getListeners().get(i);
+
+                        ConnectionListener connectionListener = new ConnectionListener() {
+
+                            @Override
+                            public void onConnected() {
+                                try {
+                                    float volume = (float) Cast.CastApi.getVolume(mApiClient);
+                                    Util.postSuccess(listener, volume);
+                                } catch (IllegalStateException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        };
+
+                        runCommand(connectionListener);
+                    }
+                }
+                else if (mSubscription.getTarget().equalsIgnoreCase(MUTE)) {
+                    for (int i = 0; i < mSubscription.getListeners().size(); i++) {
+                        @SuppressWarnings("unchecked")
+                        final ResponseListener<Object> listener = (ResponseListener<Object>) mSubscription.getListeners().get(i);
+
+                        ConnectionListener connectionListener = new ConnectionListener() {
+
+                            @Override
+                            public void onConnected() {
+                                try {
+                                    boolean isMute = Cast.CastApi.isMute(mApiClient);
+                                    Util.postSuccess(listener, isMute);
+                                } catch (IllegalStateException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        };
+
+                        runCommand(connectionListener);
+                    }
+                }
             }
 		}
     }
@@ -1167,12 +1161,12 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
 	}
 	
 	private void addSubscription(URLServiceSubscription<?> subscription) {
-		subscriptions.add(subscription);
+		mSubscription = subscription;
 	}
 	
 	@Override
 	public void unsubscribe(URLServiceSubscription<?> subscription) {
-		subscriptions.remove(subscription);
+		mSubscription = null;
 	}
 	
     public void runCommand(ConnectionListener connectionListener) {

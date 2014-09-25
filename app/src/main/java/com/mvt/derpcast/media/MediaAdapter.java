@@ -76,7 +76,7 @@ public class MediaAdapter extends BaseAdapter {
         sizeTextView.setText(megaBytes + "MB");
 
         View playingImageView = view.findViewById(R.id.playing_image_view);
-        playingImageView.setVisibility(mediaInfo == _playingMediaInfo ? View.VISIBLE : View.INVISIBLE);
+        playingImageView.setVisibility(mediaInfo.equals(_playingMediaInfo) ? View.VISIBLE : View.INVISIBLE);
 
         return view;
     }
