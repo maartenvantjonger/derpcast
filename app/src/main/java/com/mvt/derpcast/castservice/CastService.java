@@ -22,6 +22,8 @@ import com.connectsdk.service.capability.VolumeControl;
 import com.connectsdk.service.command.ServiceCommandError;
 import com.mvt.derpcast.R;
 import com.mvt.derpcast.activities.MainActivity;
+import com.mvt.derpcast.device.DeviceAdapter;
+import com.mvt.derpcast.media.MediaAdapter;
 import com.mvt.derpcast.media.MediaInfo;
 
 public class CastService extends IntentService {
@@ -42,8 +44,16 @@ public class CastService extends IntentService {
     private MediaPlayer.MediaLaunchObject _mediaLaunchObject;
     private MediaPlayer.LaunchListener _launchListener;
 
+    private DeviceAdapter _deviceAdapter;
+    private MediaAdapter _videoAdapter;
+    private MediaAdapter _audioAdapter;
+
     public CastService() {
         super("CastService");
+
+        _deviceAdapter = new DeviceAdapter(CastService.this);
+        _videoAdapter = new MediaAdapter();
+        _audioAdapter = new MediaAdapter();
 
         _castServiceBinder = new CastServiceBinder(CastService.this);
         _broadcastReceiver = new BroadcastReceiver() {
@@ -147,15 +157,24 @@ public class CastService extends IntentService {
         startForeground(PLAY_NOTIFICATION, notification);
     }
 
-    public MediaInfo whatsPlaying(ConnectableDevice device) {
-        MediaInfo mediaInfo = null;
+    public ConnectableDevice getPlayingDevice() {
+        return _device;
+    }
 
-        if (device != null && _device != null &&
-            device.getId().equals(_device.getId())) {
-            mediaInfo = _mediaInfo;
-        }
+    public MediaInfo getPlayingMediaInfo() {
+        return _mediaInfo;
+    }
 
-        return mediaInfo;
+    public DeviceAdapter getDeviceAdapter() {
+        return _deviceAdapter;
+    }
+
+    public MediaAdapter getVideoAdapter() {
+        return _videoAdapter;
+    }
+
+    public MediaAdapter getAudioAdapter() {
+        return _audioAdapter;
     }
 
     public void play() {
@@ -184,6 +203,7 @@ public class CastService extends IntentService {
 
         if (_device != null && _device.getMediaControl() != null) {
             _device.getMediaControl().stop(null);
+            _device = null;
         }
 
         if (_wifiLock.isHeld()) {

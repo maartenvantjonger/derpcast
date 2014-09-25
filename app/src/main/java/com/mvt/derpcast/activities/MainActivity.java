@@ -75,6 +75,9 @@ public class MainActivity extends ActionBarActivity {
     private TextView _currentTimeTextView;
     private TextView _durationTextView;
     private View _mediaProgressBar;
+    private ListView _deviceListView;
+    private ListView _videoListView;
+    private ListView _audioListView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,7 +97,7 @@ public class MainActivity extends ActionBarActivity {
 
                 _deviceAdapter.notifyDataSetChanged();
 
-                MediaInfo mediaInfo = _castService.whatsPlaying(_device);
+                MediaInfo mediaInfo = _castService.getPlayingMediaInfo();
                 if (mediaInfo != null) {
                     _playRequested = false;
                     showMediaControls(device.getMediaControl());
@@ -127,8 +130,6 @@ public class MainActivity extends ActionBarActivity {
                 disconnectDevice();
             }
         };
-
-        loadMedia();
     }
 
     @Override
@@ -144,7 +145,7 @@ public class MainActivity extends ActionBarActivity {
                     @Override
                     public void onSuccess(final MediaPlayer.MediaLaunchObject mediaLaunchObject) {
                         _playRequested = false;
-                        MediaInfo mediaInfo = _castService.whatsPlaying(_device);
+                        MediaInfo mediaInfo = _castService.getPlayingMediaInfo();
                         setMediaIndicator(mediaInfo);
                         showMediaControls(mediaLaunchObject.mediaControl);
                     }
@@ -155,6 +156,41 @@ public class MainActivity extends ActionBarActivity {
                         error.printStackTrace();
                     }
                 });
+
+                _deviceAdapter = _castService.getDeviceAdapter();
+                _deviceAdapter.setDeviceAddedListener(new DeviceAddedListener() {
+                    @Override
+                    public void onDeviceAdded(final ConnectableDevice device) {
+                        if (_device == null) {
+                            String lastDevice = PreferenceManager
+                                    .getDefaultSharedPreferences(MainActivity.this)
+                                    .getString("lastDevice", null);
+                            if (device.getId().equals(lastDevice)) {
+                                connectDevice(device);
+                            }
+                        }
+                    }
+                });
+
+                _deviceListView.setAdapter(_deviceAdapter);
+
+                ConnectableDevice playingDevice = _castService.getPlayingDevice();
+                if (playingDevice != null && _device == null) {
+                    _device = playingDevice;
+                    MediaInfo mediaInfo = _castService.getPlayingMediaInfo();
+                    setMediaIndicator(mediaInfo);
+                    showMediaControls(_device.getMediaControl());
+                }
+
+                _videoAdapter = _castService.getVideoAdapter();
+                _videoListView.setAdapter(_videoAdapter);
+
+                _audioAdapter = _castService.getAudioAdapter();
+                _audioListView.setAdapter(_audioAdapter);
+
+                if (_videoAdapter.getCount() == 0 && _audioAdapter.getCount() == 0) {
+                    loadMedia();
+                }
             }
 
             @Override
@@ -284,24 +320,8 @@ public class MainActivity extends ActionBarActivity {
         _tabHost.addTab(audioTab);
 
         // Device list
-        _deviceAdapter = new DeviceAdapter(MainActivity.this);
-        _deviceAdapter.setDeviceAddedListener(new DeviceAddedListener() {
-            @Override
-            public void onDeviceAdded(final ConnectableDevice device) {
-                if (_device == null) {
-                    String lastDevice = PreferenceManager
-                            .getDefaultSharedPreferences(MainActivity.this)
-                            .getString("lastDevice", null);
-                    if (device.getId().equals(lastDevice)) {
-                        connectDevice(device);
-                    }
-                }
-            }
-        });
-
-        ListView deviceListView = (ListView)findViewById(R.id.device_list_view);
-        deviceListView.setAdapter(_deviceAdapter);
-        deviceListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        _deviceListView = (ListView)findViewById(R.id.device_list_view);
+        _deviceListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
@@ -340,15 +360,11 @@ public class MainActivity extends ActionBarActivity {
             }
         };
 
-        _videoAdapter = new MediaAdapter();
-        ListView videoListView = (ListView)findViewById(R.id.video_list_view);
-        videoListView.setAdapter(_videoAdapter);
-        videoListView.setOnItemClickListener(mediaClickListener);
+        _videoListView = (ListView)findViewById(R.id.video_list_view);
+        _videoListView.setOnItemClickListener(mediaClickListener);
 
-        _audioAdapter = new MediaAdapter();
-        ListView audioListView = (ListView)findViewById(R.id.audio_list_view);
-        audioListView.setAdapter(_audioAdapter);
-        audioListView.setOnItemClickListener(mediaClickListener);
+        _audioListView = (ListView)findViewById(R.id.audio_list_view);
+        _audioListView.setOnItemClickListener(mediaClickListener);
 
         // Media buttons
         ImageButton playButton = (ImageButton) findViewById(R.id.play_button);
