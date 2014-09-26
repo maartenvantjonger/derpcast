@@ -405,6 +405,7 @@ public class MainActivity extends ActionBarActivity {
 
         Intent intent = getIntent();
         if (intent != null && Intent.ACTION_SEND.equals(intent.getAction())) {
+           // TODO get page title from Intent.EXTRA_SUBJECT
             pageUrl = intent.getStringExtra(Intent.EXTRA_TEXT);
         }
 
