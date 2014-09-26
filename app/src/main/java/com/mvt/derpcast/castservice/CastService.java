@@ -19,6 +19,7 @@ import android.view.KeyEvent;
 import android.widget.RemoteViews;
 
 import com.connectsdk.device.ConnectableDevice;
+import com.connectsdk.discovery.DiscoveryManager;
 import com.connectsdk.service.capability.MediaPlayer;
 import com.connectsdk.service.capability.VolumeControl;
 import com.connectsdk.service.command.ServiceCommandError;
@@ -121,6 +122,7 @@ public class CastService extends IntentService {
     @Override
     public void onDestroy() {
         stop();
+        DiscoveryManager.destroy();
         super.onDestroy();
     }
 

@@ -148,15 +148,22 @@ public class MainActivity extends ActionBarActivity {
                 if (playingDevice != null) {
                     connectDevice(playingDevice);
                     updateConnectItem();
-                    updateMediaTabs();
-
-                    String title = _castService.getTitle();
-                    _titleTextView.setText(title);
-                    _titleTextView.setVisibility(View.VISIBLE);
-
-                    MediaInfo mediaInfo = _castService.getPlayingMediaInfo();
-                    setMediaIndicator(mediaInfo);
                     showMediaControls(_device.getMediaControl());
+
+                    Intent intent = getIntent();
+                    if (intent != null && Intent.ACTION_SEND.equals(intent.getAction())) {
+                        loadMedia();
+                    }
+                    else {
+                        updateMediaTabs();
+
+                        String title = _castService.getTitle();
+                        _titleTextView.setText(title);
+                        _titleTextView.setVisibility(View.VISIBLE);
+
+                        MediaInfo mediaInfo = _castService.getPlayingMediaInfo();
+                        setMediaIndicator(mediaInfo);
+                    }
                 }
                 else {
                     loadMedia();
@@ -198,7 +205,6 @@ public class MainActivity extends ActionBarActivity {
             unbindService(_serviceConnection);
         }
 
-        DiscoveryManager.destroy();
         super.onDestroy();
     }
 
