@@ -166,8 +166,8 @@ public class CastService extends IntentService {
                 .registerReceiver(_broadcastReceiver, new IntentFilter(Intent.ACTION_MEDIA_BUTTON));
 
         Context context = getApplicationContext();
-        setLockScreenControls(context, title, mediaInfo.title);
-        Notification notification = getNotification(context, title, mediaInfo.title);
+        setLockScreenControls(context, title);
+        Notification notification = getNotification(context, title);
         startForeground(PLAY_NOTIFICATION, notification);
     }
 
@@ -247,7 +247,7 @@ public class CastService extends IntentService {
         }
     }
 
-    private void setLockScreenControls(Context context, String title, String description) {
+    private void setLockScreenControls(Context context, String title) {
         ComponentName eventReceiver = new ComponentName(context, MediaButtonEventReceiver.class);
 
         if (_remoteControlClient == null) {
@@ -263,7 +263,6 @@ public class CastService extends IntentService {
         _remoteControlClient
                 .editMetadata(false)
                 .putString(MediaMetadataRetriever.METADATA_KEY_TITLE, title)
-                .putString(MediaMetadataRetriever.METADATA_KEY_ALBUM, description)
                 .apply();
 
         AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
@@ -282,7 +281,7 @@ public class CastService extends IntentService {
         }
     }
 
-    private Notification getNotification(Context context, String title, String description) {
+    private Notification getNotification(Context context, String title) {
         Intent mainActivityIntent = new Intent(context, MainActivity.class);
         mainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent contentIntent = PendingIntent.getActivity(context, 0, mainActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -305,10 +304,9 @@ public class CastService extends IntentService {
 
         RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.notification);
         contentView.setTextViewText(R.id.title_text_view, title);
-        //contentView.setTextViewText(R.id.description_text_view, description);
-        //contentView.setOnClickPendingIntent(R.id.play_button, playPendingIntent);
-        //contentView.setOnClickPendingIntent(R.id.pause_button, pausePendingIntent);
-        //contentView.setOnClickPendingIntent(R.id.stop_button, stopPendingIntent);
+        contentView.setOnClickPendingIntent(R.id.play_button, playPendingIntent);
+        contentView.setOnClickPendingIntent(R.id.pause_button, pausePendingIntent);
+        contentView.setOnClickPendingIntent(R.id.stop_button, stopPendingIntent);
 
         Notification.Builder notificationBuilder = new Notification.Builder(context)
                 .setSmallIcon(R.drawable.main_icon)

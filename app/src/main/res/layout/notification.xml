@@ -8,34 +8,20 @@
     android:paddingLeft="15dp"
     android:paddingRight="15dp">
 
-    <LinearLayout
-        android:id="@+id/description_layout"
-        android:orientation="vertical"
+    <TextView
+        android:id="@+id/title_text_view"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_alignParentLeft="true"
         android:layout_toLeftOf="@+id/button_layout"
-        android:layout_marginRight="5dp">
-
-        <TextView
-            android:id="@+id/title_text_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            style="@android:style/TextAppearance.StatusBar.EventContent" />
-
-        <TextView
-            android:id="@+id/description_text_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            style="@android:style/TextAppearance.StatusBar.EventContent" />
-
-    </LinearLayout>
+        android:layout_marginRight="5dp"
+        style="@android:style/TextAppearance.StatusBar.EventContent" />
 
     <LinearLayout
         android:id="@id/button_layout"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:gravity="center"
+        android:layout_alignParentRight="true"
         android:paddingTop="6dip"
         android:paddingBottom="6dip"
         android:orientation="horizontal">
