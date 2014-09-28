@@ -14,14 +14,12 @@ import android.media.RemoteControlClient;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.RemoteViews;
 
 import com.connectsdk.device.ConnectableDevice;
 import com.connectsdk.discovery.DiscoveryManager;
 import com.connectsdk.service.capability.MediaPlayer;
-import com.connectsdk.service.capability.VolumeControl;
 import com.connectsdk.service.command.ServiceCommandError;
 import com.mvt.derpcast.R;
 import com.mvt.derpcast.activities.MainActivity;
@@ -32,8 +30,10 @@ import com.mvt.derpcast.media.MediaInfo;
 public class CastService extends IntentService {
 
     public static final String ACTION_START = "com.mvt.derpcast.action.START";
+    public static final String ACTION_NOTIFICATION_PLAY = "com.mvt.derpcast.action.NOTIFICATION_PLAY";
+    public static final String ACTION_NOTIFICATION_PAUSE = "com.mvt.derpcast.action.NOTIFICATION_PAUSE";
+    public static final String ACTION_NOTIFICATION_STOP = "com.mvt.derpcast.action.NOTIFICATION_STOP";
     public static final int PLAY_NOTIFICATION = 1;
-
     private static final String MEDIA_LOGO_URL = "https://googledrive.com/host/0BzRo13oMy82cbEJRSHM3VEVyUWc/app_logo.png";
     private static final String MEDIA_VIDEO_ART_URL = "https://googledrive.com/host/0BzRo13oMy82cbEJRSHM3VEVyUWc/video_art.png";
 
@@ -51,6 +51,7 @@ public class CastService extends IntentService {
     private MediaAdapter _audioAdapter;
 
     private boolean _serviceStarted;
+    private boolean _playing;
     private String _title;
 
     public CastService() {
@@ -62,7 +63,6 @@ public class CastService extends IntentService {
 
         if (!_serviceStarted) {
             _serviceStarted = true;
-            Log.i("CastService", "onStartCommand");
 
             WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
             _wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "DerpCastWifiLock");
@@ -75,22 +75,27 @@ public class CastService extends IntentService {
             _broadcastReceiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
-                    KeyEvent keyEvent = (KeyEvent) intent.getExtras().get(Intent.EXTRA_KEY_EVENT);
-                    if (keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
-                        switch (keyEvent.getKeyCode()) {
-                            case KeyEvent.KEYCODE_MEDIA_PLAY:
-                                play();
-                                break;
-                            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
-                                pause();
-                                break;
-                            case KeyEvent.KEYCODE_MEDIA_STOP:
-                                stop();
-                                break;
-                            case KeyEvent.KEYCODE_VOLUME_UP:
-                            case KeyEvent.KEYCODE_VOLUME_DOWN:
-                                changeVolume(keyEvent.getKeyCode());
-                                break;
+                    String action = intent.getAction();
+                    if (ACTION_NOTIFICATION_PLAY.equals(action)) {
+                        play();
+                    }
+                    else if (ACTION_NOTIFICATION_PAUSE.equals(action)) {
+                        pause();
+                    }
+                    else if (ACTION_NOTIFICATION_STOP.equals(action)) {
+                        stop();
+                    }
+                    else if (Intent.ACTION_MEDIA_BUTTON.equals(action)) {
+                        KeyEvent keyEvent = (KeyEvent) intent.getExtras().get(Intent.EXTRA_KEY_EVENT);
+                        if (keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+                            if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
+                                if (_playing) {
+                                    pause();
+                                }
+                                else {
+                                    play();
+                                }
+                            }
                         }
                     }
                 }
@@ -139,6 +144,7 @@ public class CastService extends IntentService {
             return;
         }
 
+        _playing = true;
         _mediaInfo = mediaInfo;
         _device = device;
         _title = title;
@@ -163,9 +169,15 @@ public class CastService extends IntentService {
             }
         });
 
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_MEDIA_BUTTON);
+        intentFilter.addAction(ACTION_NOTIFICATION_PLAY);
+        intentFilter.addAction(ACTION_NOTIFICATION_PAUSE);
+        intentFilter.addAction(ACTION_NOTIFICATION_STOP);
+
         LocalBroadcastManager
                 .getInstance(CastService.this)
-                .registerReceiver(_broadcastReceiver, new IntentFilter(Intent.ACTION_MEDIA_BUTTON));
+                .registerReceiver(_broadcastReceiver, intentFilter);
 
         Context context = getApplicationContext();
         setLockScreenControls(context, title);
@@ -198,34 +210,37 @@ public class CastService extends IntentService {
     }
 
     public void play() {
-        if (_remoteControlClient != null) {
-            _remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PLAYING);
-        }
-
         if (_device != null && _device.getMediaControl() != null) {
             _device.getMediaControl().play(null);
+            _playing = true;
+
+            if (_remoteControlClient != null) {
+                _remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PLAYING);
+            }
         }
     }
 
     public void pause() {
-        if (_remoteControlClient != null) {
-            _remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PAUSED);
-        }
-
         if (_device != null && _device.getMediaControl() != null) {
             _device.getMediaControl().pause(null);
+            _playing = false;
+
+            if (_remoteControlClient != null) {
+                _remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PAUSED);
+            }
         }
     }
 
     public void stop() {
-        _mediaInfo = null;
-        _mediaLaunchObject = null;
-        _title = null;
-
         if (_device != null && _device.getMediaControl() != null) {
             _device.getMediaControl().stop(null);
             _device = null;
         }
+
+        _playing = false;
+        _mediaInfo = null;
+        _mediaLaunchObject = null;
+        _title = null;
 
         if (_wifiLock.isHeld()) {
             _wifiLock.release();
@@ -238,17 +253,6 @@ public class CastService extends IntentService {
         stopForeground(true);
     }
 
-    public void changeVolume(int keyCode) {
-        if (_device != null && _device.hasCapability(VolumeControl.Volume_Up_Down)) {
-            VolumeControl volumeControl = _device.getVolumeControl();
-            if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
-                volumeControl.volumeUp(null);
-            } else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
-                volumeControl.volumeDown(null);
-            }
-        }
-    }
-
     private void setLockScreenControls(Context context, String title) {
         ComponentName eventReceiver = new ComponentName(context, MediaButtonEventReceiver.class);
 
@@ -258,8 +262,7 @@ public class CastService extends IntentService {
             PendingIntent mediaPendingIntent = PendingIntent.getBroadcast(context, 0, mediaButtonIntent, 0);
 
             _remoteControlClient = new RemoteControlClient(mediaPendingIntent);
-            _remoteControlClient.setTransportControlFlags(
-                    RemoteControlClient.FLAG_KEY_MEDIA_PLAY_PAUSE);
+            _remoteControlClient.setTransportControlFlags(RemoteControlClient.FLAG_KEY_MEDIA_PLAY_PAUSE);
         }
 
         _remoteControlClient
@@ -286,23 +289,20 @@ public class CastService extends IntentService {
     private Notification getNotification(Context context, String title) {
         Intent mainActivityIntent = new Intent(context, MainActivity.class);
         mainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent contentIntent = PendingIntent.getActivity(context, 0, mainActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent contentIntent = PendingIntent.getActivity(context, 0, mainActivityIntent, 0);
 
         ComponentName eventReceiver = new ComponentName(context, MediaButtonEventReceiver.class);
-        Intent playIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
+        Intent playIntent = new Intent(ACTION_NOTIFICATION_PLAY);
         playIntent.setComponent(eventReceiver);
-        playIntent.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY));
-        PendingIntent playPendingIntent = PendingIntent.getBroadcast(context, 0, playIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent playPendingIntent = PendingIntent.getBroadcast(context, 1, playIntent, 0);
 
-        Intent pauseIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
+        Intent pauseIntent = new Intent(ACTION_NOTIFICATION_PAUSE);
         pauseIntent.setComponent(eventReceiver);
-        pauseIntent.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE));
-        PendingIntent pausePendingIntent = PendingIntent.getBroadcast(context, 0, pauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pausePendingIntent = PendingIntent.getBroadcast(context, 2, pauseIntent, 0);
 
-        Intent stopIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
+        Intent stopIntent = new Intent(ACTION_NOTIFICATION_STOP);
         stopIntent.setComponent(eventReceiver);
-        stopIntent.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_STOP));
-        PendingIntent stopPendingIntent = PendingIntent.getBroadcast(context, 0, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent stopPendingIntent = PendingIntent.getBroadcast(context, 3, stopIntent, 0);
 
         RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.notification);
         contentView.setTextViewText(R.id.title_text_view, title);

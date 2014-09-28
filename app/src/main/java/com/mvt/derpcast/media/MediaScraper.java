@@ -20,7 +20,6 @@ import java.util.Map;
 public class MediaScraper {
 
     private String _mediaPattern = "([^'^\"]+\\.(%1$s)(?:\\?.+)?)['\"]";
-    private final String _titlePattern = "<title>(.+)</title>";
     private final String _iframePattern = "<iframe .*src=['\"](.+?)['\"]";
     private List<MediaInfo> _foundMediaInfos = new ArrayList<MediaInfo>();
     private Map<String, String> _mediaFormats;
@@ -50,11 +49,6 @@ public class MediaScraper {
                         } else if (response != null) {
                             String html = response.getResult();
                             if (html != null) {
-                                String pageTitle = RegexHelper.getFirstMatch(_titlePattern, html);
-                                if (pageTitle != null) {
-                                    listener.pageTitleFound(pageTitle);
-                                }
-
                                 List<String> mediaUrls = RegexHelper.getMatches(_mediaPattern, html);
                                 for (final String mediaUrl : mediaUrls) {
                                     synchronized (MediaScraper.this) {

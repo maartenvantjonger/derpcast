@@ -59,6 +59,9 @@
             android:name=".castservice.MediaButtonEventReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
+                <action android:name="com.mvt.derpcast.action.NOTIFICATION_PLAY" />
+                <action android:name="com.mvt.derpcast.action.NOTIFICATION_PAUSE" />
+                <action android:name="com.mvt.derpcast.action.NOTIFICATION_STOP" />
             </intent-filter>
         </receiver>
     </application>

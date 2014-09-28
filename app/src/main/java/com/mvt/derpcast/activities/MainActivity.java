@@ -1,16 +1,17 @@
 package com.mvt.derpcast.activities;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBarActivity;
-import android.text.Html;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -57,6 +58,7 @@ public class MainActivity extends ActionBarActivity {
     private DeviceAdapter _deviceAdapter;
     private MediaAdapter _videoAdapter;
     private MediaAdapter _audioAdapter;
+    private BroadcastReceiver _broadcastReceiver;
     private Timer _timer;
 
     private long _mediaDuration;
@@ -85,6 +87,20 @@ public class MainActivity extends ActionBarActivity {
         setContentView(R.layout.activity_main);
         setupViews();
 
+        _broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+                if (CastService.ACTION_NOTIFICATION_STOP.equals(action)) {
+                    stop();
+                }
+            }
+        };
+
+        LocalBroadcastManager
+                .getInstance(MainActivity.this)
+                .registerReceiver(_broadcastReceiver, new IntentFilter(CastService.ACTION_NOTIFICATION_STOP));
+
         _timer = new Timer();
     }
 
@@ -92,14 +108,9 @@ public class MainActivity extends ActionBarActivity {
     protected void onStart() {
         super.onStart();
 
-        Log.i("MainActivity", "onStart");
-
-
         _serviceConnection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName className, IBinder binder) {
-                Log.i("MainActivity", "onServiceConnected: " + className.toString());
-
                 CastServiceBinder castServiceBinder = (CastServiceBinder) binder;
                 _castService = castServiceBinder.getCastService();
                 _castService.setLaunchListener(new MediaPlayer.LaunchListener() {
@@ -144,14 +155,15 @@ public class MainActivity extends ActionBarActivity {
                 _videoListView.setAdapter(_videoAdapter);
                 _audioListView.setAdapter(_audioAdapter);
 
+                boolean newUrl = Intent.ACTION_SEND.equals(getIntent().getAction());
+
                 ConnectableDevice playingDevice = _castService.getPlayingDevice();
                 if (playingDevice != null) {
                     connectDevice(playingDevice);
                     updateConnectItem();
                     showMediaControls(_device.getMediaControl());
 
-                    Intent intent = getIntent();
-                    if (intent != null && Intent.ACTION_SEND.equals(intent.getAction())) {
+                    if (newUrl) {
                         loadMedia();
                     }
                     else {
@@ -172,7 +184,6 @@ public class MainActivity extends ActionBarActivity {
 
             @Override
             public void onServiceDisconnected(ComponentName componentName) {
-                Log.i("MainActivity", "onServiceDisconnected");
                 _castService = null;
             }
         };
@@ -185,13 +196,19 @@ public class MainActivity extends ActionBarActivity {
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
+        setIntent(intent);
+    }
+
+    @Override
     protected void onStop() {
         super.onStop();
 
         DiscoveryManager.getInstance().stop();
 
         if (_castService != null) {
-            Log.i("MainActivity", "onStop");
             _castService = null;
             unbindService(_serviceConnection);
         }
@@ -200,10 +217,13 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onDestroy() {
         if (_castService != null) {
-            Log.i("MainActivity", "onDestroy");
             _castService = null;
             unbindService(_serviceConnection);
         }
+
+        LocalBroadcastManager
+                .getInstance(MainActivity.this)
+                .unregisterReceiver(_broadcastReceiver);
 
         super.onDestroy();
     }
@@ -314,7 +334,8 @@ public class MainActivity extends ActionBarActivity {
 
                 if (sameDeviceClicked) {
                     editor.remove("lastDevice").apply();
-                } else {
+                }
+                else {
                     connectDevice(device);
                     editor.putString("lastDevice", _device.getId()).apply();
                 }
@@ -401,24 +422,32 @@ public class MainActivity extends ActionBarActivity {
         }
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        String pageTitle = preferences.getString("pageTitle", null);
         String pageUrl = preferences.getString("pageUrl", null);
 
         Intent intent = getIntent();
-        if (intent != null && Intent.ACTION_SEND.equals(intent.getAction())) {
-           // TODO get page title from Intent.EXTRA_SUBJECT
+        if (Intent.ACTION_SEND.equals(intent.getAction())) {
+            pageTitle = intent.getStringExtra(Intent.EXTRA_SUBJECT);
             pageUrl = intent.getStringExtra(Intent.EXTRA_TEXT);
         }
 
         if (pageUrl == null) {
             _usageTextView.setVisibility(View.VISIBLE);
         }
-        else{
+        else {
+            preferences.edit()
+                    .putString("pageTitle", pageTitle)
+                    .putString("pageUrl", pageUrl)
+                    .apply();
+
             _videoAdapter.clear();
             _audioAdapter.clear();
 
             _tabHost.setVisibility(View.GONE);
             _mediaProgressBar.setVisibility(View.VISIBLE);
-            preferences.edit().putString("pageUrl", pageUrl).apply();
+
+            _titleTextView.setText(pageTitle);
+            _titleTextView.setVisibility(View.VISIBLE);
 
             Map<String, String> mediaFormats = new HashMap<String, String>();
             mediaFormats.put("aac", "audio/aac");
@@ -436,19 +465,6 @@ public class MainActivity extends ActionBarActivity {
                     } else if (mediaInfo.format.startsWith("audio/")) {
                         _audioAdapter.addMediaInfo(mediaInfo);
                     }
-                }
-
-                @Override
-                public void pageTitleFound(final String pageTitle) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (!_titleTextView.isShown()) {
-                                _titleTextView.setText(Html.fromHtml(pageTitle).toString());
-                                _titleTextView.setVisibility(View.VISIBLE);
-                            }
-                        }
-                    });
                 }
 
                 @Override
@@ -538,7 +554,8 @@ public class MainActivity extends ActionBarActivity {
             if (_device == null || _device instanceof LocalDevice) {
                 _connectItem.setIcon(R.drawable.ic_media_route_off_holo_light);
                 _connectItem.setTitle(R.string.cast);
-            } else {
+            }
+            else {
                 _connectItem.setIcon(R.drawable.ic_media_route_on_holo_light);
                 _connectItem.setTitle(_device.getModelName());
             }
@@ -565,14 +582,17 @@ public class MainActivity extends ActionBarActivity {
         _mediaController.setVisibility(View.VISIBLE);
         _currentTimeTextView.setText(R.string.zero_time);
         _durationTextView.setText(R.string.zero_time);
-        _timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                getPlayerPosition(mediaControl);
-            }
-        }, 1000, 1000);
 
-        getMediaDuration(mediaControl);
+        if (_device.hasCapability(MediaControl.Position)) {
+            _timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    getPlayerPosition(mediaControl);
+                }
+            }, 1000, 1000);
+
+            getMediaDuration(mediaControl);
+        }
     }
 
     private void connectDevice(ConnectableDevice device) {
@@ -583,8 +603,6 @@ public class MainActivity extends ActionBarActivity {
             mediaControl.subscribePlayState(new MediaControl.PlayStateListener() {
                 @Override
                 public void onSuccess(final MediaControl.PlayStateStatus playState) {
-                    Log.i("DerpCast", "play state: " + playState.name());
-
                     if (playState == MediaControl.PlayStateStatus.Finished ||
                             playState == MediaControl.PlayStateStatus.Idle ||
                             playState == MediaControl.PlayStateStatus.Unknown) {
@@ -615,8 +633,7 @@ public class MainActivity extends ActionBarActivity {
                     _playRequested = false;
                     showMediaControls(device.getMediaControl());
                     setMediaIndicator(mediaInfo);
-                }
-                else {
+                } else {
                     // Play media that may be queued
                     play(_videoAdapter.getPlayingMedia());
                 }
@@ -636,7 +653,8 @@ public class MainActivity extends ActionBarActivity {
             }
 
             @Override
-            public void onCapabilityUpdated(ConnectableDevice device, List<String> added, List<String> removed) {}
+            public void onCapabilityUpdated(ConnectableDevice device, List<String> added, List<String> removed) {
+            }
 
             @Override
             public void onConnectionFailed(ConnectableDevice device, ServiceCommandError error) {
