@@ -84,122 +84,9 @@ public class MainActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.activity_main);
         setupViews();
-
-        _broadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String action = intent.getAction();
-                if (CastService.ACTION_NOTIFICATION_STOP.equals(action)) {
-                    stop();
-                }
-            }
-        };
-
-        LocalBroadcastManager
-                .getInstance(MainActivity.this)
-                .registerReceiver(_broadcastReceiver, new IntentFilter(CastService.ACTION_NOTIFICATION_STOP));
-
-        _timer = new Timer();
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        _serviceConnection = new ServiceConnection() {
-            @Override
-            public void onServiceConnected(ComponentName className, IBinder binder) {
-                CastServiceBinder castServiceBinder = (CastServiceBinder) binder;
-                _castService = castServiceBinder.getCastService();
-                _castService.setLaunchListener(new MediaPlayer.LaunchListener() {
-                    @Override
-                    public void onSuccess(final MediaPlayer.MediaLaunchObject mediaLaunchObject) {
-                        _playRequested = false;
-
-                        if (_castService != null) {
-                            MediaInfo mediaInfo = _castService.getPlayingMediaInfo();
-                            setMediaIndicator(mediaInfo);
-                            showMediaControls(mediaLaunchObject.mediaControl);
-                        }
-                    }
-
-                    @Override
-                    public void onError(ServiceCommandError error) {
-                        _playRequested = false;
-                        error.printStackTrace();
-                    }
-                });
-
-                _deviceAdapter = _castService.getDeviceAdapter();
-                _deviceAdapter.setDeviceAddedListener(new DeviceAddedListener() {
-                    @Override
-                    public void onDeviceAdded(final ConnectableDevice device) {
-                        if (_device == null) {
-                            String lastDevice = PreferenceManager
-                                    .getDefaultSharedPreferences(MainActivity.this)
-                                    .getString("lastDevice", null);
-
-                            if (device.getId().equals(lastDevice)) {
-                                connectDevice(device);
-                            }
-                        }
-                    }
-                });
-
-                _videoAdapter = _castService.getVideoAdapter();
-                _audioAdapter = _castService.getAudioAdapter();
-
-                _deviceListView.setAdapter(_deviceAdapter);
-                _videoListView.setAdapter(_videoAdapter);
-                _audioListView.setAdapter(_audioAdapter);
-
-                boolean newUrl = Intent.ACTION_SEND.equals(getIntent().getAction());
-
-                ConnectableDevice playingDevice = _castService.getPlayingDevice();
-                if (playingDevice != null) {
-                    connectDevice(playingDevice);
-                    updateConnectItem();
-                    showMediaControls(_device.getMediaControl());
-
-                    if (newUrl) {
-                        loadMedia();
-                    }
-                    else {
-                        updateMediaTabs();
-
-                        String title = _castService.getTitle();
-                        _titleTextView.setText(title);
-                        _titleTextView.setVisibility(View.VISIBLE);
-
-                        MediaInfo mediaInfo = _castService.getPlayingMediaInfo();
-                        setMediaIndicator(mediaInfo);
-                    }
-                }
-                else {
-                    loadMedia();
-                }
-            }
-
-            @Override
-            public void onServiceDisconnected(ComponentName componentName) {
-                _castService = null;
-            }
-        };
-
-        Intent startIntent = new Intent(CastService.ACTION_START, null, getApplicationContext(), CastService.class);
-        startService(startIntent);
-
-        Intent bindIntent = new Intent(MainActivity.this, CastService.class);
-        bindService(bindIntent, _serviceConnection, Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-
-        setIntent(intent);
+        bindCastService();
+        setupBroadcastReceiver();
     }
 
     @Override
@@ -207,11 +94,6 @@ public class MainActivity extends ActionBarActivity {
         super.onStop();
 
         DiscoveryManager.getInstance().stop();
-
-        if (_castService != null) {
-            _castService = null;
-            unbindService(_serviceConnection);
-        }
     }
 
     @Override
@@ -226,6 +108,16 @@ public class MainActivity extends ActionBarActivity {
                 .unregisterReceiver(_broadcastReceiver);
 
         super.onDestroy();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
+        if (Intent.ACTION_SEND.equals(intent.getAction())) {
+            setIntent(intent);
+            loadMedia();
+        }
     }
 
     @Override
@@ -291,6 +183,8 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void setupViews() {
+        setContentView(R.layout.activity_main);
+
         _seekBarLayout = findViewById(R.id.seek_bar_layout);
         _mediaController = findViewById(R.id.media_controller);
         _titleTextView = (TextView)findViewById(R.id.title_text_view);
@@ -416,6 +310,102 @@ public class MainActivity extends ActionBarActivity {
         });
     }
 
+    private void bindCastService() {
+        _serviceConnection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName className, IBinder binder) {
+                CastServiceBinder castServiceBinder = (CastServiceBinder) binder;
+                _castService = castServiceBinder.getCastService();
+                _castService.setLaunchListener(new MediaPlayer.LaunchListener() {
+                    @Override
+                    public void onSuccess(final MediaPlayer.MediaLaunchObject mediaLaunchObject) {
+                        _playRequested = false;
+
+                        if (_castService != null) {
+                            MediaInfo mediaInfo = _castService.getPlayingMediaInfo();
+                            setMediaIndicator(mediaInfo);
+                            showMediaControls(mediaLaunchObject.mediaControl);
+                        }
+                    }
+
+                    @Override
+                    public void onError(ServiceCommandError error) {
+                        _playRequested = false;
+                        error.printStackTrace();
+                    }
+                });
+
+                _deviceAdapter = _castService.getDeviceAdapter();
+                _deviceAdapter.setDeviceAddedListener(new DeviceAddedListener() {
+                    @Override
+                    public void onDeviceAdded(final ConnectableDevice device) {
+                        if (_device == null) {
+                            String lastDevice = PreferenceManager
+                                    .getDefaultSharedPreferences(MainActivity.this)
+                                    .getString("lastDevice", null);
+
+                            if (device.getId().equals(lastDevice)) {
+                                connectDevice(device);
+                            }
+                        }
+                    }
+                });
+
+                _videoAdapter = _castService.getVideoAdapter();
+                _audioAdapter = _castService.getAudioAdapter();
+
+                _deviceListView.setAdapter(_deviceAdapter);
+                _videoListView.setAdapter(_videoAdapter);
+                _audioListView.setAdapter(_audioAdapter);
+
+                ConnectableDevice playingDevice = _castService.getPlayingDevice();
+                if (playingDevice != null) {
+                    connectDevice(playingDevice);
+                    updateConnectItem();
+                    showMediaControls(_device.getMediaControl());
+                    updateMediaTabs();
+
+                    String title = _castService.getTitle();
+                    _titleTextView.setText(title);
+                    _titleTextView.setVisibility(View.VISIBLE);
+
+                    MediaInfo mediaInfo = _castService.getPlayingMediaInfo();
+                    setMediaIndicator(mediaInfo);
+                }
+                else {
+                    loadMedia();
+                }
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName componentName) {
+                _castService = null;
+            }
+        };
+
+        Intent startIntent = new Intent(CastService.ACTION_START, null, getApplicationContext(), CastService.class);
+        startService(startIntent);
+
+        Intent bindIntent = new Intent(MainActivity.this, CastService.class);
+        bindService(bindIntent, _serviceConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    private void setupBroadcastReceiver() {
+        _broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+                if (CastService.ACTION_NOTIFICATION_STOP.equals(action)) {
+                    stop();
+                }
+            }
+        };
+
+        LocalBroadcastManager
+                .getInstance(MainActivity.this)
+                .registerReceiver(_broadcastReceiver, new IntentFilter(CastService.ACTION_NOTIFICATION_STOP));
+    }
+
     private void loadMedia() {
         if (_refreshItem != null) {
             _refreshItem.setVisible(false);
@@ -443,6 +433,9 @@ public class MainActivity extends ActionBarActivity {
             _videoAdapter.clear();
             _audioAdapter.clear();
 
+            setMediaIndicator(null);
+
+            _usageTextView.setVisibility(View.GONE);
             _tabHost.setVisibility(View.GONE);
             _mediaProgressBar.setVisibility(View.VISIBLE);
 
@@ -525,6 +518,10 @@ public class MainActivity extends ActionBarActivity {
             _mediaController.setVisibility(View.GONE);
             setMediaIndicator(null);
 
+            if (_timer != null) {
+                _timer.cancel();
+            }
+
             if (_castService != null) {
                 _castService.stop();
             }
@@ -582,8 +579,10 @@ public class MainActivity extends ActionBarActivity {
         _mediaController.setVisibility(View.VISIBLE);
         _currentTimeTextView.setText(R.string.zero_time);
         _durationTextView.setText(R.string.zero_time);
+        _seekBar.setProgress(0);
 
         if (_device.hasCapability(MediaControl.Position)) {
+            _timer = new Timer();
             _timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
