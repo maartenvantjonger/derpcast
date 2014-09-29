@@ -151,7 +151,7 @@ public class CastService extends IntentService {
 
         String imageUrl = mediaInfo.format.startsWith("video/") ? MEDIA_VIDEO_ART_URL : MEDIA_LOGO_URL;
         MediaPlayer mediaPlayer = device.getMediaPlayer();
-        mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, title, mediaInfo.title, imageUrl, false, new MediaPlayer.LaunchListener() {
+        mediaPlayer.playMedia(mediaInfo.url, mediaInfo.format, title, mediaInfo.url, imageUrl, false, new MediaPlayer.LaunchListener() {
             @Override
             public void onSuccess(MediaPlayer.MediaLaunchObject mediaLaunchObject) {
                 _mediaLaunchObject = mediaLaunchObject;

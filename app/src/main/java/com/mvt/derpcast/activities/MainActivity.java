@@ -418,6 +418,10 @@ public class MainActivity extends ActionBarActivity {
         Intent intent = getIntent();
         if (Intent.ACTION_SEND.equals(intent.getAction())) {
             pageTitle = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+            if (pageTitle == null || pageTitle.trim() == "") {
+                pageTitle = getString(R.string.no_page_title);
+            }
+
             pageUrl = intent.getStringExtra(Intent.EXTRA_TEXT);
         }
 
