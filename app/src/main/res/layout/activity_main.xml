@@ -39,6 +39,8 @@
             android:layout_marginRight="15dp"
             android:layout_below="@id/device_layout"
             android:textSize="16sp"
+            android:maxLines="2"
+            android:ellipsize="end"
             android:visibility="gone" />
 
         <TextView

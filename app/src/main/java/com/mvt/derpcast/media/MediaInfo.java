@@ -1,4 +1,4 @@
-package com.mvt.derpcast;
+package com.mvt.derpcast.media;
 
 public class MediaInfo implements Comparable<MediaInfo> {
     public String title;

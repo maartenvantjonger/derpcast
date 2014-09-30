@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp"
+    android:paddingLeft="10dp"
+    android:paddingRight="10dp">
+
+    <TextView
+        android:id="@+id/title_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_alignParentLeft="true"
+        android:layout_toLeftOf="@+id/button_layout"
+        android:layout_marginRight="5dp"
+        android:ellipsize="end"
+        android:maxLines="2"
+        style="@android:style/TextAppearance.StatusBar.EventContent.Title" />
+
+    <LinearLayout
+        android:id="@id/button_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:paddingTop="6dip"
+        android:paddingBottom="6dip"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/play_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="8dp"
+            android:background="@drawable/play" />
+
+        <ImageButton
+            android:id="@+id/pause_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="8dp"
+            android:background="@drawable/pause" />
+
+        <ImageButton
+            android:id="@+id/stop_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/stop" />
+
+    </LinearLayout>
+
+</RelativeLayout>

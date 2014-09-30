@@ -1,8 +1,10 @@
-package com.mvt.derpcast;
+package com.mvt.derpcast.activities;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
+
+import com.mvt.derpcast.R;
 
 public class AboutActivity extends Activity {
 

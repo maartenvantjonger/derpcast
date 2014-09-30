@@ -1,4 +1,4 @@
-package com.mvt.derpcast;
+package com.mvt.derpcast.device;
 
 import android.os.Build;
 

@@ -1,10 +1,12 @@
-package com.mvt.derpcast;
+package com.mvt.derpcast.media;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
+
+import com.mvt.derpcast.R;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -74,7 +76,7 @@ public class MediaAdapter extends BaseAdapter {
         sizeTextView.setText(megaBytes + "MB");
 
         View playingImageView = view.findViewById(R.id.playing_image_view);
-        playingImageView.setVisibility(mediaInfo == _playingMediaInfo ? View.VISIBLE : View.INVISIBLE);
+        playingImageView.setVisibility(mediaInfo.equals(_playingMediaInfo) ? View.VISIBLE : View.INVISIBLE);
 
         return view;
     }

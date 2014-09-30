@@ -1,4 +1,4 @@
-package com.mvt.derpcast;
+package com.mvt.derpcast.media;
 
 import android.content.Context;
 import android.text.TextUtils;
@@ -19,8 +19,7 @@ import java.util.Map;
 
 public class MediaScraper {
 
-    private String _mediaPattern = "([^'^\"]+\\.(%1$s)(?:\\?.+)?)['\"]";
-    private final String _titlePattern = "<title>(.+)</title>";
+    private String _mediaPattern = "([^'\"]+\\.(%1$s)(?:\\?.*?)?)['\"]";
     private final String _iframePattern = "<iframe .*src=['\"](.+?)['\"]";
     private List<MediaInfo> _foundMediaInfos = new ArrayList<MediaInfo>();
     private Map<String, String> _mediaFormats;
@@ -50,11 +49,6 @@ public class MediaScraper {
                         } else if (response != null) {
                             String html = response.getResult();
                             if (html != null) {
-                                String pageTitle = RegexHelper.getFirstMatch(_titlePattern, html);
-                                if (pageTitle != null) {
-                                    listener.pageTitleFound(pageTitle);
-                                }
-
                                 List<String> mediaUrls = RegexHelper.getMatches(_mediaPattern, html);
                                 for (final String mediaUrl : mediaUrls) {
                                     synchronized (MediaScraper.this) {
@@ -105,10 +99,10 @@ public class MediaScraper {
                         mediaInfo.extension = extension;
                         mediaInfo.format = _mediaFormats.get(extension);
 
-                        try {
-                            mediaInfo.size = Long.parseLong(rawHeaders.get("Content-Length"));
-                        } catch (NumberFormatException e) { e.printStackTrace(); }
-
+                        String contentLength = rawHeaders.get("Content-Length");
+                        if (contentLength != null && contentLength != "") {
+                            mediaInfo.size = Long.parseLong(contentLength);
+                        }
                         listener.mediaFound(mediaInfo);
                     }
                 }
@@ -127,7 +121,8 @@ public class MediaScraper {
     }
 
     private String getAbsoluteUrl(String pageUrl, String url) {
-        String absoluteUrl = url;
+        // Fixes Dropbox URLs
+        String absoluteUrl = url.replace("?dl=0", "?dl=1");
 
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             try {
