@@ -19,7 +19,8 @@ import java.util.Map;
 
 public class MediaScraper {
 
-    private String _mediaPattern = "([^'\"]+\\.(%1$s)(?:\\?.*?)?)['\"]";
+    private String _mediaPattern;
+    private String _mediaAttributePattern;
     private final String _iframePattern = "<iframe .*src=['\"](.+?)['\"]";
     private List<MediaInfo> _foundMediaInfos = new ArrayList<MediaInfo>();
     private Map<String, String> _mediaFormats;
@@ -27,11 +28,20 @@ public class MediaScraper {
 
     public MediaScraper(Map<String, String> mediaFormats) {
         _mediaFormats = mediaFormats;
-        _mediaPattern = String.format(_mediaPattern, TextUtils.join("|", mediaFormats.keySet()));
+        _mediaPattern = String.format("([^'\"]+\\.(%1$s)(?:\\?.*?)?)", TextUtils.join("|", mediaFormats.keySet()));
+        _mediaAttributePattern = _mediaPattern + "['\"]";
     }
 
     public void scrape(final Context context, final String pageUrl, final int iframeDepth, final MediaScraperListener listener) {
         if (pageUrl != null) {
+            String mediaUrl = RegexHelper.getFirstMatch(_mediaPattern, pageUrl);
+            if (mediaUrl != null) {
+                MediaInfo mediaInfo = new MediaInfo(mediaUrl);
+                _foundMediaInfos.add(mediaInfo);
+                addMediaMetaData(context, mediaInfo, listener);
+                return;
+            }
+
             _activeRequestCount++;
 
             Ion.with(context)
@@ -49,7 +59,7 @@ public class MediaScraper {
                         } else if (response != null) {
                             String html = response.getResult();
                             if (html != null) {
-                                List<String> mediaUrls = RegexHelper.getMatches(_mediaPattern, html);
+                                List<String> mediaUrls = RegexHelper.getMatches(_mediaAttributePattern, html);
                                 for (final String mediaUrl : mediaUrls) {
                                     synchronized (MediaScraper.this) {
                                         final MediaInfo mediaInfo = new MediaInfo(getAbsoluteUrl(pageUrl, mediaUrl));
