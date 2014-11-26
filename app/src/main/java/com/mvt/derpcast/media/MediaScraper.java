@@ -4,8 +4,8 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.koushikdutta.async.future.FutureCallback;
-import com.koushikdutta.async.http.libcore.RawHeaders;
 import com.koushikdutta.ion.HeadersCallback;
+import com.koushikdutta.ion.HeadersResponse;
 import com.koushikdutta.ion.Ion;
 import com.koushikdutta.ion.Response;
 import com.mvt.derpcast.helpers.RegexHelper;
@@ -96,9 +96,8 @@ public class MediaScraper {
             .setTimeout(5000)
             .onHeaders(new HeadersCallback() {
                 @Override
-                public void onHeaders(RawHeaders rawHeaders) {
-                    if (rawHeaders.getResponseCode() < 400) {
-
+                public void onHeaders(HeadersResponse headersResponse) {
+                    if (headersResponse.code() < 400) {
                         int fileNameIndex = mediaInfo.url.lastIndexOf('/') + 1;
                         int queryStringIndex = mediaInfo.url.lastIndexOf('?');
                         queryStringIndex = queryStringIndex != -1 ? queryStringIndex : mediaInfo.url.length();
@@ -109,7 +108,7 @@ public class MediaScraper {
                         mediaInfo.extension = extension;
                         mediaInfo.format = _mediaFormats.get(extension);
 
-                        String contentLength = rawHeaders.get("Content-Length");
+                        String contentLength = headersResponse.getHeaders().get("Content-Length");
                         if (contentLength != null && contentLength != "") {
                             mediaInfo.size = Long.parseLong(contentLength);
                         }

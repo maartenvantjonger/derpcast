@@ -303,8 +303,10 @@ public class CastService extends DeviceService implements MediaPlayer, MediaCont
 			
 			@Override
 			public void onConnected() {
-				Util.postSuccess(listener, mMediaPlayer.getApproximateStreamPosition());
-			}
+                if (mMediaPlayer != null) {
+				    Util.postSuccess(listener, mMediaPlayer.getApproximateStreamPosition());
+			    }
+            }
 		};
 		
 		runCommand(connectionListener);

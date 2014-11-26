@@ -116,7 +116,13 @@ public class MainActivity extends ActionBarActivity {
 
         if (Intent.ACTION_SEND.equals(intent.getAction())) {
             setIntent(intent);
-            loadMedia();
+
+            if (_serviceConnection != null) {
+                loadMedia();
+            }
+            else {
+                bindCastService();
+            }
         }
     }
 
@@ -564,8 +570,8 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void updateMediaTabs() {
-        boolean videoFound =  _videoAdapter.getCount() > 0;
-        boolean audioFound =  _audioAdapter.getCount() > 0;
+        boolean videoFound = _videoAdapter.getCount() > 0;
+        boolean audioFound = _audioAdapter.getCount() > 0;
 
         findViewById(R.id.no_video_text_view).setVisibility(videoFound ? View.GONE : View.VISIBLE);
         findViewById(R.id.no_audio_text_view).setVisibility(audioFound ? View.GONE : View.VISIBLE);
