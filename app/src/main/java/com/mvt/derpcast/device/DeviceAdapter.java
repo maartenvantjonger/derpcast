@@ -25,18 +25,13 @@ import com.mvt.derpcast.R;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 
 public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListener {
 
-    private List<ConnectableDevice> _devices = new ArrayList<ConnectableDevice>();
-    private DeviceAddedListener _deviceAddedListener;
-    private final Object _syncRoot = new Object();
+    private List<ConnectableDevice> mDevices = new ArrayList<>();
+    private DeviceAddedListener mDeviceAddedListener;
 
     public DeviceAdapter(Context context) {
-        ConnectableDevice localDevice = new LocalDevice();
-        _devices.add(localDevice);
-
         DiscoveryManager.init(context);
         DiscoveryManager discoveryManager = DiscoveryManager.getInstance();
         discoveryManager.addListener(DeviceAdapter.this);
@@ -52,7 +47,7 @@ public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListen
 
     @Override
     public int getCount() {
-        return _devices.size();
+        return mDevices.size();
     }
 
     @Override
@@ -61,7 +56,7 @@ public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListen
     }
 
     public ConnectableDevice getDevice(int i) {
-        return _devices.get(i);
+        return mDevices.get(i);
     }
 
     @Override
@@ -73,7 +68,7 @@ public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListen
     public View getView(int i, View view, final ViewGroup viewGroup) {
         if (view == null) {
             LayoutInflater inflater = LayoutInflater.from(viewGroup.getContext());
-            view = inflater.inflate(R.layout.device_list_item, viewGroup, false);
+            view = inflater.inflate(R.layout.view_device_item, viewGroup, false);
         }
 
         final ConnectableDevice device = getDevice(i);
@@ -92,20 +87,18 @@ public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListen
     }
 
     @Override
-    public void onDeviceAdded(DiscoveryManager manager, ConnectableDevice device) {
-        synchronized (_syncRoot) {
-            String deviceId = device.getId();
+    public synchronized void onDeviceAdded(DiscoveryManager manager, ConnectableDevice device) {
+        String deviceId = device.getId();
 
-            for (ConnectableDevice addedDevice: _devices) {
-              if (deviceId.equals(addedDevice.getId())) return;
-            }
-
-            _devices.add(device);
-            notifyDataSetChanged();
-
-            if (_deviceAddedListener != null)
-                _deviceAddedListener.onDeviceAdded(device);
+        for (ConnectableDevice addedDevice : mDevices) {
+            if (deviceId.equals(addedDevice.getId())) return;
         }
+
+        mDevices.add(device);
+        notifyDataSetChanged();
+
+        if (mDeviceAddedListener != null)
+            mDeviceAddedListener.onDeviceAdded(device);
     }
 
     @Override
@@ -114,18 +107,19 @@ public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListen
     }
 
     @Override
-    public void onDeviceRemoved(DiscoveryManager manager, ConnectableDevice device) {
-        synchronized (_syncRoot) {
-            String deviceId = device.getId();
+    public synchronized void onDeviceRemoved(DiscoveryManager manager, ConnectableDevice device) {
+        String deviceId = device.getId();
+        ConnectableDevice deviceToRemove = null;
 
-            ListIterator<ConnectableDevice> iterator = _devices.listIterator();
-            while (iterator.hasNext()) {
-                ConnectableDevice currentDevice = iterator.next();
-                if (deviceId.equals(currentDevice.getId())) {
-                    _devices.remove(currentDevice);
-                    notifyDataSetChanged();
-                }
+        for (ConnectableDevice currentDevice : mDevices) {
+            if (deviceId.equals(currentDevice.getId())) {
+                deviceToRemove = currentDevice;
             }
+        }
+
+        if (deviceToRemove != null) {
+            mDevices.remove(deviceToRemove);
+            notifyDataSetChanged();
         }
     }
 
@@ -135,7 +129,7 @@ public class DeviceAdapter extends BaseAdapter implements DiscoveryManagerListen
     }
 
     public void setDeviceAddedListener(DeviceAddedListener deviceAddedListener) {
-        _deviceAddedListener = deviceAddedListener;
+        mDeviceAddedListener = deviceAddedListener;
     }
 }
 

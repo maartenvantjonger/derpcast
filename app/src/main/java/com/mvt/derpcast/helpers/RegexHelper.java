@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 public class RegexHelper {
 
     public static List<String> getMatches(String pattern, String text) {
-        List<String> matches = new ArrayList<String>();
+        List<String> matches = new ArrayList<>();
         Matcher matcher = Pattern
                 .compile(pattern, Pattern.CASE_INSENSITIVE)
                 .matcher(text);

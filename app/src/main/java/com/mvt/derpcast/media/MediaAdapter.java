@@ -15,33 +15,33 @@ import java.util.List;
 
 public class MediaAdapter extends BaseAdapter {
 
-    private List<MediaInfo> _mediaInfos = new ArrayList<MediaInfo>();
-    private MediaInfo _playingMediaInfo;
+    private final List<MediaInfo> mMediaInfos = new ArrayList<>();
+    private MediaInfo mPlayingMediaInfo;
 
     public synchronized void addMediaInfo(MediaInfo mediaInfo) {
-        if (!_mediaInfos.contains(mediaInfo)) {
-            _mediaInfos.add(mediaInfo);
-            Collections.sort(_mediaInfos);
+        if (!mMediaInfos.contains(mediaInfo)) {
+            mMediaInfos.add(mediaInfo);
+            Collections.sort(mMediaInfos);
             notifyDataSetChanged();
         }
     }
 
     public void setPlayingMediaInfo(MediaInfo mediaInfo) {
-        _playingMediaInfo = mediaInfo;
+        mPlayingMediaInfo = mediaInfo;
         notifyDataSetChanged();
     }
 
     public MediaInfo getPlayingMedia() {
-        return _playingMediaInfo;
+        return mPlayingMediaInfo;
     }
 
     public void clear() {
-        _mediaInfos.clear();
+        mMediaInfos.clear();
     }
 
     @Override
     public int getCount() {
-        return _mediaInfos.size();
+        return mMediaInfos.size();
     }
 
     @Override
@@ -50,7 +50,7 @@ public class MediaAdapter extends BaseAdapter {
     }
 
     public MediaInfo getMediaInfo(int i) {
-        return _mediaInfos.get(i);
+        return mMediaInfos.get(i);
     }
 
     @Override
@@ -62,21 +62,21 @@ public class MediaAdapter extends BaseAdapter {
     public View getView(int i, View view, final ViewGroup viewGroup) {
         if (view == null) {
             LayoutInflater inflater = LayoutInflater.from(viewGroup.getContext());
-            view = inflater.inflate(R.layout.media_list_item, viewGroup, false);
+            view = inflater.inflate(R.layout.view_media_item, viewGroup, false);
         }
 
         final MediaInfo mediaInfo = getMediaInfo(i);
 
         TextView mediaTitleTextView = (TextView) view.findViewById(R.id.media_title_text_view);
-        mediaTitleTextView.setText(mediaInfo.title.toLowerCase());
+        mediaTitleTextView.setText(mediaInfo.getTitle().toLowerCase());
 
         TextView sizeTextView = (TextView) view.findViewById(R.id.size_text_view);
 
-        int megaBytes = (int)Math.ceil(mediaInfo.size / 1048576d);
+        int megaBytes = (int) Math.ceil(mediaInfo.getSize() / 1048576d);
         sizeTextView.setText(megaBytes + "MB");
 
         View playingImageView = view.findViewById(R.id.playing_image_view);
-        playingImageView.setVisibility(mediaInfo.equals(_playingMediaInfo) ? View.VISIBLE : View.INVISIBLE);
+        playingImageView.setVisibility(mediaInfo.equals(mPlayingMediaInfo) ? View.VISIBLE : View.INVISIBLE);
 
         return view;
     }

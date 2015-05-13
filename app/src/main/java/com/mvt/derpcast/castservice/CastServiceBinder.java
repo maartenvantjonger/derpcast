@@ -3,13 +3,13 @@ package com.mvt.derpcast.castservice;
 import android.os.Binder;
 
 public class CastServiceBinder extends Binder {
-    private CastService _castService;
+    private CastService mCastService;
 
     public CastServiceBinder(CastService castService) {
-        _castService = castService;
+        mCastService = castService;
     }
 
     public CastService getCastService() {
-        return _castService;
+        return mCastService;
     }
 }

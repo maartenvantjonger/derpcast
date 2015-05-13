@@ -1,18 +1,17 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 19
-    buildToolsVersion '19.1'
+    compileSdkVersion 21
+    buildToolsVersion '21.1.2'
 
     defaultConfig {
-        applicationId "com.connectsdk"
         minSdkVersion 10
-        targetSdkVersion 19
+        targetSdkVersion 21
     }
 
     buildTypes {
         release {
-            runProguard false
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
@@ -23,9 +22,9 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:mediarouter-v7:19+'
-    compile 'com.android.support:appcompat-v7:19+'
-    compile 'com.google.android.gms:play-services:5.0.89+'
+    compile 'com.android.support:mediarouter-v7:22.1.1'
+    compile 'com.android.support:appcompat-v7:22.1.1'
+    compile 'com.google.android.gms:play-services:7.3.0'
     compile files('libs/javax.jmdns_3.4.1-patch2.jar')
     compile files('libs/java_websocket.jar')
 }

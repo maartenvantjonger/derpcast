@@ -10,7 +10,7 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@drawable/launcher_icon"
+        android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme">
 
@@ -22,13 +22,13 @@
             android:name=".activities.MainActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:label="@string/app_name"
-            android:logo="@drawable/main_icon"
             android:launchMode="singleTask">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -36,27 +36,11 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".activities.MediaPlayerActivity"
-            android:configChanges="orientation|keyboardHidden|screenSize"
-            android:parentActivityName=".activities.MainActivity"
-            android:theme="@style/AppTheme.FullScreen">
-        </activity>
-
-        <activity
-            android:name=".activities.AboutActivity"
-            android:configChanges="orientation|keyboardHidden|screenSize"
-            android:parentActivityName=".activities.MainActivity"
-            android:theme="@style/AppTheme.NoActionBar">
-        </activity>
-
         <service
             android:name=".castservice.CastService"
-            android:exported="false">
-        </service>
+            android:exported="false" />
 
-        <receiver
-            android:name=".castservice.MediaButtonEventReceiver">
+        <receiver android:name=".castservice.MediaButtonEventReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
                 <action android:name="com.mvt.derpcast.action.NOTIFICATION_PLAY" />

@@ -1,14 +1,16 @@
 package com.mvt.derpcast.media;
 
+import android.support.annotation.NonNull;
+
 public class MediaInfo implements Comparable<MediaInfo> {
-    public String title;
-    public String url;
-    public String format;
-    public String extension;
-    public long size;
+    private String mTitle;
+    private String mUrl;
+    private String mFormat;
+    private String mExtension;
+    private long mSize;
 
     public MediaInfo(String url) {
-        this.url = url;
+        mUrl = url;
     }
 
     @Override
@@ -16,22 +18,57 @@ public class MediaInfo implements Comparable<MediaInfo> {
     {
         boolean equal = false;
 
-        if (object instanceof MediaInfo)
-        {
+        if (object instanceof MediaInfo) {
             MediaInfo mediaInfo = (MediaInfo)object;
-            equal = mediaInfo.url.equalsIgnoreCase(this.url);
+            equal = mediaInfo.mUrl.equalsIgnoreCase(mUrl);
         }
 
         return equal;
     }
 
     @Override
-    public int compareTo(MediaInfo mediaInfo) {
-        return Long.valueOf(mediaInfo.size).compareTo(this.size);
+    public int compareTo(@NonNull MediaInfo mediaInfo) {
+        return Long.valueOf(mediaInfo.mSize).compareTo(mSize);
     }
 
         @Override
     public int hashCode() {
-        return this.url.hashCode();
+            return mUrl.hashCode();
+        }
+
+    public String getTitle() {
+        return mTitle;
+    }
+
+    public void setTitle(String title) {
+        mTitle = title;
+    }
+
+    public String getFormat() {
+        return mFormat;
+    }
+
+    public void setFormat(String format) {
+        mFormat = format;
+    }
+
+    public String getExtension() {
+        return mExtension;
+    }
+
+    public void setExtension(String extension) {
+        mExtension = extension;
+    }
+
+    public long getSize() {
+        return mSize;
+    }
+
+    public void setSize(long size) {
+        mSize = size;
+    }
+
+    public String getUrl() {
+        return mUrl;
     }
 }

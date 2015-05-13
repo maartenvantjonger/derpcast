@@ -4,159 +4,60 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:animateLayoutChanges="true"
-    android:clickable="true"
+    android:background="@color/app_background"
     tools:context=".MainActivity">
 
-    <RelativeLayout
+    <include
+        android:id="@+id/toolbar"
+        layout="@layout/view_toolbar" />
+
+    <LinearLayout
         android:id="@+id/slide_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_above="@+id/media_controller"
+        android:layout_below="@+id/toolbar"
         android:animateLayoutChanges="true"
-        android:layout_above="@+id/media_controller">
+        android:orientation="vertical">
 
-        <LinearLayout
-            android:id="@+id/device_layout"
+        <ListView
+            android:id="@+id/device_list_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:orientation="vertical"
-            android:background="@color/orangeholo_color"
-            android:visibility="gone">
+            android:animationCache="false"
+            android:background="@color/derpy_orange"
+            android:divider="@null"
+            android:scrollingCache="false"
+            android:visibility="gone" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/derpy_orange" />
+
+        <android.support.v4.widget.SwipeRefreshLayout
+            android:id="@+id/refresh_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
             <ListView
-                android:id="@+id/device_list_view"
+                android:id="@+id/media_list_view"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:animationCache="false"
+                android:divider="@null"
+                android:scrollingCache="false" />
 
-        </LinearLayout>
+        </android.support.v4.widget.SwipeRefreshLayout>
 
-        <TextView
-            android:id="@+id/title_text_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="15dp"
-            android:layout_marginLeft="15dp"
-            android:layout_marginRight="15dp"
-            android:layout_below="@id/device_layout"
-            android:textSize="16sp"
-            android:maxLines="2"
-            android:ellipsize="end"
-            android:visibility="gone" />
+    </LinearLayout>
 
-        <TextView
-            android:id="@+id/usage_text_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="15dp"
-            android:layout_marginLeft="15dp"
-            android:layout_marginRight="15dp"
-            android:layout_below="@id/title_text_view"
-            android:textSize="16sp"
-            android:text="@string/usage"
-            android:visibility="gone" />
-
-        <ProgressBar
-            android:id="@+id/media_progress_bar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:layout_below="@id/usage_text_view"
-            android:layout_centerHorizontal="true"
-            android:visibility="gone" />
-
-        <TabHost
-            android:id="@android:id/tabhost"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/usage_text_view"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:orientation="vertical"
-                android:layout_height="match_parent"
-                android:layout_width="match_parent">
-
-                <TabWidget
-                    android:id="@android:id/tabs"
-                    android:layout_height="wrap_content"
-                    android:layout_width="match_parent"
-                    android:layout_marginBottom="5dp" />
-
-                <FrameLayout
-                    android:id="@android:id/tabcontent"
-                    android:layout_height="match_parent"
-                    android:layout_width="match_parent">
-
-                    <ScrollView
-                        android:id="@+id/video_scroll_view"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:fillViewport="true">
-
-                        <RelativeLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content">
-
-                            <TextView
-                                android:id="@+id/no_video_text_view"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_margin="15dp"
-                                android:textSize="16sp"
-                                android:text="@string/no_video"
-                                android:visibility="gone" />
-
-                            <ListView
-                                android:id="@+id/video_list_view"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content" />
-
-                        </RelativeLayout>
-
-                    </ScrollView>
-
-                    <ScrollView
-                        android:id="@+id/audio_scroll_view"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:fillViewport="true">
-
-                        <RelativeLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content">
-
-                            <TextView
-                                android:id="@+id/no_audio_text_view"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_margin="15dp"
-                                android:textSize="16sp"
-                                android:text="@string/no_audio"
-                                android:visibility="gone" />
-
-                            <ListView
-                                android:id="@+id/audio_list_view"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content" />
-
-                        </RelativeLayout>
-
-                    </ScrollView>
-
-
-                </FrameLayout>
-
-            </LinearLayout>
-
-        </TabHost>
-
-    </RelativeLayout>
-
-    <include layout="@layout/media_controller"
-        android:id="@id/media_controller"
+    <include
+        android:id="@+id/media_controller"
+        layout="@layout/view_media_controller"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_margin="10dp" />
+        android:layout_margin="15dp" />
 
 </RelativeLayout>
